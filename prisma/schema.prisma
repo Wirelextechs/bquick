@@ -1,0 +1,300 @@
+// Prisma Schema for BQUICK Logistics
+// Supports Role-Based Access Control and a future RMB Exchange module
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+// --- CORE ROLES & USERS ---
+
+enum Role {
+  ADMIN
+  AGENT
+  CLIENT
+}
+
+// Where an agent is based; drives which actions their UI exposes
+// (e.g. only a GHANA agent can mark AT_WAREHOUSE / PICKED_UP)
+enum AgentLocation {
+  ABROAD
+  GHANA
+}
+
+model User {
+  id           String   @id @default(uuid())
+  email        String   @unique
+  passwordHash String
+  name         String
+  role         Role     @default(CLIENT)
+  isActive     Boolean  @default(true) // used to suspend agents
+  createdAt    DateTime @default(now())
+
+  // Client contact details (used when role = CLIENT)
+  clientCode     String? @unique // human-readable ID, e.g. CL-000123; set when role = CLIENT, immutable after creation
+  phone          String?
+  secondaryPhone String?
+  address        String?
+  country        String?
+
+  // Agent details (used when role = AGENT)
+  agentLocation AgentLocation?
+
+  // Relations
+  ordersAsClient    Order[]      @relation("ClientOrders")
+  ordersCreated     Order[]      @relation("CreatedByAgent")
+  ordersLastUpdated Order[]      @relation("LastUpdatedByAgent")
+  orderLogs         OrderLog[]
+  uploadedPhotos    OrderPhoto[]
+  loginLogs         LoginLog[]
+
+  exchangesAsClient  ExchangeTransaction[]     @relation("ClientExchanges")
+  exchangesProcessed ExchangeTransaction[]     @relation("ProcessedExchanges")
+  exchangeLogs       ExchangeLog[]             @relation("ExchangeLogAdmin")
+  ratesSet           ExchangeRate[]            @relation("ExchangeRateSetter")
+  paymentSettingsSet ExchangePaymentSettings[] @relation("ExchangeSettingsUpdater")
+
+  @@index([role])
+  @@index([clientCode])
+}
+
+model LoginLog {
+  id        String   @id @default(uuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id])
+  success   Boolean
+  ipAddress String?
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+}
+
+// --- LOGISTICS ---
+
+enum OrderStatus {
+  PENDING // input by foreign agent, not yet shipped
+  IN_TRANSIT // shipped from origin
+  AT_PORT // arrived in Ghana
+  AT_WAREHOUSE // sorted & ready
+  PICKED_UP // completed
+}
+
+model Order {
+  id            String      @id @default(uuid())
+  trackingCode  String      @unique
+  status        OrderStatus @default(PENDING)
+  originCountry String
+  description   String // required quick summary of the goods
+  weightKg      Decimal?
+  declaredValue Decimal?
+
+  // Per-stage timestamps, set as the status advances
+  estimatedArrival     DateTime?
+  shippedAt            DateTime?
+  arrivedAtPortAt      DateTime?
+  arrivedAtWarehouseAt DateTime?
+  pickedUpAt           DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  clientId String
+  client   User   @relation("ClientOrders", fields: [clientId], references: [id])
+
+  createdById String
+  createdBy   User   @relation("CreatedByAgent", fields: [createdById], references: [id])
+
+  lastUpdatedById String?
+  lastUpdatedBy   User?   @relation("LastUpdatedByAgent", fields: [lastUpdatedById], references: [id])
+
+  items  OrderItem[]
+  logs   OrderLog[]
+  photos OrderPhoto[]
+
+  @@index([status])
+  @@index([clientId])
+  @@index([createdById])
+  @@index([createdAt])
+}
+
+// Optional itemized breakdown of goods within one shipment.
+// Agents can skip this and rely on Order.description for speed.
+model OrderItem {
+  id          String   @id @default(uuid())
+  orderId     String
+  order       Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  description String
+  quantity    Int      @default(1)
+  weightKg    Decimal?
+  value       Decimal?
+
+  @@index([orderId])
+}
+
+// Photos attached to an order (e.g. proof of goods at intake). Stored on
+// local disk under public/uploads for now; swap the storage adapter for a
+// cloud bucket URL later without touching this model.
+model OrderPhoto {
+  id           String   @id @default(uuid())
+  orderId      String
+  order        Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  url          String
+  uploadedById String
+  uploadedBy   User     @relation(fields: [uploadedById], references: [id])
+  createdAt    DateTime @default(now())
+
+  @@index([orderId])
+}
+
+enum OrderLogAction {
+  STATUS_CHANGE
+  CLIENT_REASSIGNED
+  DETAILS_EDITED
+}
+
+// Unified audit trail for an order: status transitions and client reassignments.
+// Client names/ids are snapshotted at the time of the event so history reads
+// correctly even if the client account is later renamed.
+model OrderLog {
+  id      String         @id @default(uuid())
+  orderId String
+  order   Order          @relation(fields: [orderId], references: [id])
+  agentId String
+  agent   User           @relation(fields: [agentId], references: [id])
+  action  OrderLogAction @default(STATUS_CHANGE)
+
+  fromStatus OrderStatus?
+  toStatus   OrderStatus?
+
+  fromClientId   String?
+  fromClientName String?
+  toClientId     String?
+  toClientName   String?
+
+  note      String?
+  timestamp DateTime @default(now())
+
+  @@index([orderId])
+  @@index([agentId])
+}
+
+// --- RMB EXCHANGE ---
+// Manual, non-custodial GHS -> RMB exchange: client submits a request +
+// MoMo payment evidence, admin verifies the payment against the merchant's
+// MoMo account and fulfils it by sending RMB to the recipient. There is no
+// stored client balance/wallet — every exchange is a self-contained request.
+
+enum ExchangeStatus {
+  PENDING // submitted, awaiting MoMo payment verification
+  PROCESSING // admin verified payment, RMB transfer in progress
+  COMPLETED // RMB sent to recipient
+  FAILED // payment not found / cancelled
+}
+
+// How the client pays us in GHS. Alipay is deliberately excluded — it's a
+// Chinese payment app, not something a Ghana-based client would use to pay
+// GHS locally; it only applies on the recipient (payout) side.
+enum ExchangePaymentMethod {
+  MOMO
+  BANK
+}
+
+// How the recipient in China should be paid the RMB.
+enum ExchangeRecipientMethod {
+  ACCOUNT_DETAILS // typed bank account or vendor platform payment ID
+  ALIPAY_QR // uploaded Alipay QR code image
+}
+
+model ExchangeTransaction {
+  id            String @id @default(uuid())
+  referenceCode String @unique // e.g. EX-2026-XXXXXX, client-facing tracking code
+
+  clientId String
+  client   User   @relation("ClientExchanges", fields: [clientId], references: [id])
+
+  amountGHS Decimal // client-entered
+  rate      Decimal // RMB per 1 GHS, snapshotted from ExchangeRate at submission
+  amountRMB Decimal // computed = amountGHS * rate, locked at submission
+
+  paymentMethod   ExchangePaymentMethod
+  paymentRef      String // MoMo reference or bank transfer reference the client supplies
+  payerMomoName   String? // name registered on the MoMo account the payment was sent from, set when paymentMethod = MOMO
+  payerMomoNumber String? // phone number registered on the MoMo account the payment was sent from, set when paymentMethod = MOMO
+  payerBankName          String? // bank the payment was sent from, set when paymentMethod = BANK
+  payerBankAccountNumber String? // account number the payment was sent from, set when paymentMethod = BANK
+  payerBankAccountName   String? // account holder name, set when paymentMethod = BANK
+  proofUrl        String? // payment-proof screenshot/QR (Supabase Storage URL)
+
+  recipientMethod  ExchangeRecipientMethod @default(ALIPAY_QR) // which of the two fields below the client filled in
+  recipientDetails String? // free text: bank account info OR vendor platform + payment ID, set when recipientMethod = ACCOUNT_DETAILS
+  recipientQrUrl   String? // recipient's Alipay QR code image (Supabase Storage URL), set when recipientMethod = ALIPAY_QR
+  contactPhone     String // contact number for this exchange
+
+  status ExchangeStatus @default(PENDING)
+
+  processedById  String?
+  processedBy    User?     @relation("ProcessedExchanges", fields: [processedById], references: [id])
+  processedAt    DateTime?
+  processingNote String? // latest note; full history lives in ExchangeLog
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  logs ExchangeLog[]
+
+  @@index([clientId])
+  @@index([status])
+  @@index([referenceCode])
+}
+
+enum ExchangeLogAction {
+  STATUS_CHANGE
+  NOTE_ADDED
+}
+
+// Status-history audit trail for an exchange transaction, mirrors OrderLog.
+model ExchangeLog {
+  id         String              @id @default(uuid())
+  exchangeId String
+  exchange   ExchangeTransaction @relation(fields: [exchangeId], references: [id])
+  adminId    String
+  admin      User                @relation("ExchangeLogAdmin", fields: [adminId], references: [id])
+  action     ExchangeLogAction   @default(STATUS_CHANGE)
+
+  fromStatus ExchangeStatus?
+  toStatus   ExchangeStatus?
+
+  note      String?
+  timestamp DateTime @default(now())
+
+  @@index([exchangeId])
+}
+
+// Admin-settable exchange rate. Append-only: latest row (by createdAt) is
+// "today's rate", earlier rows double as a historical rate log.
+model ExchangeRate {
+  id        String   @id @default(uuid())
+  rate      Decimal // RMB per 1 GHS
+  setById   String
+  setBy     User     @relation("ExchangeRateSetter", fields: [setById], references: [id])
+  createdAt DateTime @default(now())
+
+  @@index([createdAt])
+}
+
+// Merchant MoMo collection details shown to clients when submitting a
+// request. Singleton row (fixed id "singleton"), admin-editable.
+model ExchangePaymentSettings {
+  id          String   @id @default(uuid())
+  momoNumber  String
+  momoName    String
+  updatedById String
+  updatedBy   User     @relation("ExchangeSettingsUpdater", fields: [updatedById], references: [id])
+  updatedAt   DateTime @updatedAt
+}
