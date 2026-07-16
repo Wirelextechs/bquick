@@ -43,12 +43,12 @@ export default async function ClientExchangePage() {
                 (registered name: <span className="font-medium">{settings.momoName}</span>).
               </p>
               <p>2. Submit a new request below with your payment reference and a screenshot of your payment.</p>
-              <p>3. Upload your recipient&apos;s Alipay QR code (not a QR of the payment you just made) — or type their account details instead.</p>
+              <p>3. Upload your recipient&apos;s Alipay QR code (not a QR of the payment you just made), or type their account details instead.</p>
               <p>4. We verify the payment against our MoMo account and send the RMB to your recipient.</p>
             </div>
           ) : (
             <p className="text-sm text-text-muted">
-              Payment collection details haven&apos;t been configured yet — contact support.
+              Payment collection details haven&apos;t been configured yet. Contact support.
             </p>
           )}
         </div>

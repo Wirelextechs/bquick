@@ -23,7 +23,7 @@ export type ClientOption = {
 };
 
 function displayLabel(client: ClientOption) {
-  return `${client.name} — ${client.clientCode ?? client.email}`;
+  return `${client.name} · ${client.clientCode ?? client.email}`;
 }
 
 export function ClientCombobox({

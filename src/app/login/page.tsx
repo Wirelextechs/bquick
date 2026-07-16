@@ -77,12 +77,12 @@ function LoginForm() {
 
         <div className="relative z-10 max-w-md">
           <h1 className="text-4xl font-bold leading-[1.1] tracking-tight text-white">
-            From origin to your doorstep{" "}
+            From origin to your doorstep,{" "}
             <span
               className="bg-clip-text text-transparent"
               style={{ backgroundImage: "linear-gradient(90deg, var(--brand-cyan), #ffffff)" }}
             >
-              — tracked every step.
+              tracked every step.
             </span>
           </h1>
           <p className="mt-4 text-sm leading-relaxed text-white/65">

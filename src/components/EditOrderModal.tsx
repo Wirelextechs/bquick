@@ -226,7 +226,7 @@ export function EditOrderModal({
                   </div>
                 ))}
                 {items.length === 0 && (
-                  <p className="text-xs text-text-muted">No itemized goods — using description only.</p>
+                  <p className="text-xs text-text-muted">No itemized goods. Using description only.</p>
                 )}
               </div>
             </div>

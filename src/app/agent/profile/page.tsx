@@ -20,7 +20,7 @@ export default async function AgentProfilePage() {
         <div className="flex items-center gap-2 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-700">
           <Lock className="size-4 shrink-0" />
           Your profile is read-only. To update any of these details, contact an
-          administrator — they can make the change on your behalf.
+          administrator who can make the change on your behalf.
         </div>
 
         <div className="rounded-2xl border border-border-subtle bg-surface p-5 shadow-[var(--shadow-card)]">

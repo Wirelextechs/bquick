@@ -83,7 +83,7 @@ export default async function AdminAgentsPage() {
             {agents.length === 0 && (
               <TableRow className="hover:bg-transparent">
                 <TableCell colSpan={6} className="px-5 py-16 text-center text-text-muted">
-                  No agents yet — create one to get started.
+                  No agents yet. Create one to get started.
                 </TableCell>
               </TableRow>
             )}

@@ -120,7 +120,7 @@ export async function PATCH(
           orderId: id,
           agentId: session.user.id,
           action: "DETAILS_EDITED",
-          note: [`Updated: ${changedFields.join(", ")}`, note].filter(Boolean).join(" — "),
+          note: [`Updated: ${changedFields.join(", ")}`, note].filter(Boolean).join(" · "),
         },
       });
     }

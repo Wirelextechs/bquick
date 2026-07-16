@@ -60,7 +60,7 @@ export default async function AgentPage({
     >
       {clients.length === 0 && (
         <div className="mb-4 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-700">
-          No client accounts exist yet — ask an admin to create one before you can register a shipment.
+          No client accounts exist yet. Ask an admin to create one before you can register a shipment.
         </div>
       )}
 

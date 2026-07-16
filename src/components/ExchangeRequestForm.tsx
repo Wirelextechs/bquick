@@ -129,7 +129,7 @@ export function ExchangeRequestForm({ rate }: { rate: string }) {
       {open && (
         <Modal
           title="Request an RMB exchange"
-          description="Submit your payment details for verification — the merchant MoMo details are shown on this page."
+          description="Submit your payment details for verification. The merchant MoMo details are shown on this page."
           onClose={() => setOpen(false)}
         >
           <form onSubmit={handleSubmit} className="space-y-4">
@@ -194,7 +194,7 @@ export function ExchangeRequestForm({ rate }: { rate: string }) {
                 <p className="mt-1 text-xs text-text-muted">
                   {form.paymentMethod === "MOMO"
                     ? "Use the exact reference shown in your MoMo payment confirmation, so we can match it quickly."
-                    : "If your bank provides a transfer reference, enter it here — otherwise this may not apply."}
+                    : "If your bank provides a transfer reference, enter it here. Otherwise, this may not apply."}
                 </p>
               </div>
               <div>
@@ -287,7 +287,7 @@ export function ExchangeRequestForm({ rate }: { rate: string }) {
                 onChange={(e) => setProofFile(e.target.files?.[0] ?? null)}
               />
               <p className="mt-1 text-xs text-text-muted">
-                Proof that you sent the GHS payment to us — a screenshot of the MoMo/bank confirmation.
+                Proof that you sent the GHS payment to us: a screenshot of the MoMo/bank confirmation.
               </p>
             </div>
 
@@ -311,7 +311,7 @@ export function ExchangeRequestForm({ rate }: { rate: string }) {
                 </SelectContent>
               </Select>
               <p className="mt-1 text-xs text-text-muted">
-                Different suppliers accept payment differently — pick whichever the recipient requires.
+                Different suppliers accept payment differently. Pick whichever the recipient requires.
               </p>
             </div>
 

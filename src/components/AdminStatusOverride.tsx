@@ -64,7 +64,7 @@ export function AdminStatusOverride({
       {open && (
         <Modal
           title="Manually correct status"
-          description="Use this only to fix a mistaken update — it bypasses the normal forward-only flow and is logged as a manual override."
+          description="Use this only to fix a mistaken update. It bypasses the normal forward-only flow and is logged as a manual override."
           onClose={() => setOpen(false)}
         >
           <form onSubmit={handleSubmit} className="space-y-4">

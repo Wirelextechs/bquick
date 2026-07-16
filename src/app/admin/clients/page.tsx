@@ -75,7 +75,7 @@ export default async function AdminClientsPage() {
             {clients.length === 0 && (
               <TableRow className="hover:bg-transparent">
                 <TableCell colSpan={6} className="px-5 py-16 text-center text-text-muted">
-                  No clients yet — create one to get started.
+                  No clients yet. Create one to get started.
                 </TableCell>
               </TableRow>
             )}
