@@ -56,7 +56,7 @@ export function CreateOrderForm({ clients }: { clients: ClientOption[] }) {
     if (!res.ok) {
       setLoading(false);
       const body = await res.json().catch(() => ({}));
-      setError(extractErrorMessage(body.error, "Failed to create order"));
+      setError(extractErrorMessage(body.error, "Failed to create shipment"));
       return;
     }
 
@@ -74,7 +74,7 @@ export function CreateOrderForm({ clients }: { clients: ClientOption[] }) {
         // Don't block the flow — surface it and let them add photos from the detail page.
         setLoading(false);
         toast.warning("Shipment created, but photo upload failed", {
-          description: "You can add photos from the order page.",
+          description: "You can add photos from the shipment page.",
         });
         setOpen(false);
         router.refresh();

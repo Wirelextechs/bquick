@@ -7,6 +7,7 @@ import { OrderStatusUpdater } from "@/components/OrderStatusUpdater";
 import { CreateOrderForm } from "@/components/CreateOrderForm";
 import { Avatar } from "@/components/Avatar";
 import { AgentNav } from "@/components/AgentNav";
+import { FilterForm } from "@/components/FilterForm";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -64,10 +65,7 @@ export default async function AgentPage({
         </div>
       )}
 
-      <form
-        className="mb-4 flex flex-wrap items-center gap-3 rounded-xl border border-border-subtle bg-surface p-3 shadow-[var(--shadow-xs)]"
-        method="get"
-      >
+      <FilterForm className="mb-4 flex flex-wrap items-center gap-3 rounded-xl border border-border-subtle bg-surface p-3 shadow-[var(--shadow-xs)]">
         <select
           name="status"
           defaultValue={params.status ?? ""}
@@ -89,61 +87,96 @@ export default async function AgentPage({
         />
         <Input type="date" name="date" defaultValue={params.date ?? ""} className="w-auto" />
         <Button type="submit">Apply filters</Button>
-      </form>
+      </FilterForm>
 
-      <div className="rounded-xl border border-border-subtle bg-surface shadow-[var(--shadow-card)]">
-        <Table className="min-w-[720px] text-sm">
-          <TableHeader>
-            <TableRow className="border-border-subtle bg-surface-muted text-xs font-semibold uppercase tracking-wide text-text-muted hover:bg-surface-muted">
-              <TableHead className="h-auto px-5 py-3 text-inherit">Tracking</TableHead>
-              <TableHead className="h-auto px-5 py-3 text-inherit">Client</TableHead>
-              <TableHead className="h-auto px-5 py-3 text-inherit">Origin</TableHead>
-              <TableHead className="h-auto px-5 py-3 text-inherit">Status</TableHead>
-              <TableHead className="h-auto px-5 py-3 text-inherit">Created</TableHead>
-              <TableHead className="h-auto px-5 py-3 text-inherit">Action</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
+      {orders.length === 0 ? (
+        <div className="rounded-xl border border-border-subtle bg-surface px-5 py-16 text-center text-sm text-text-muted shadow-[var(--shadow-card)]">
+          No shipments match these filters.
+        </div>
+      ) : (
+        <>
+          {/* Mobile card list */}
+          <div className="space-y-3 md:hidden">
             {orders.map((order) => (
-              <TableRow
-                key={order.id}
-                className="border-border-subtle last:border-0 transition hover:bg-surface-muted"
-              >
-                <TableCell className="whitespace-normal px-5 py-3.5 font-mono text-xs font-medium text-brand-navy">
-                  <Link href={`/orders/${order.id}`} className="hover:underline">
-                    {order.trackingCode}
+              <div key={order.id} className="rounded-2xl border border-border-subtle bg-surface p-4 shadow-[var(--shadow-xs)]">
+                <div className="flex items-start justify-between gap-2">
+                  <Link href={`/orders/${order.id}`} className="min-w-0">
+                    <p className="truncate font-mono text-xs font-medium text-brand-navy">
+                      {order.trackingCode}
+                    </p>
                   </Link>
-                </TableCell>
-                <TableCell className="whitespace-normal px-5 py-3.5">
-                  <div className="flex items-center gap-2.5">
-                    <Avatar name={order.client.name} />
-                    <span className="font-medium text-text-primary">{order.client.name}</span>
-                  </div>
-                </TableCell>
-                <TableCell className="whitespace-normal px-5 py-3.5 text-text-secondary">
-                  {order.originCountry}
-                </TableCell>
-                <TableCell className="whitespace-normal px-5 py-3.5">
                   <StatusBadge status={order.status} />
-                </TableCell>
-                <TableCell className="whitespace-normal px-5 py-3.5 text-text-muted">
-                  {order.createdAt.toLocaleDateString()}
-                </TableCell>
-                <TableCell className="whitespace-normal px-5 py-3.5">
+                </div>
+                <div className="mt-2 flex items-center gap-2.5">
+                  <Avatar name={order.client.name} />
+                  <span className="truncate text-sm font-medium text-text-primary">{order.client.name}</span>
+                </div>
+                <dl className="mt-3 grid grid-cols-2 gap-2 border-t border-border-subtle pt-3 text-xs">
+                  <div>
+                    <dt className="text-text-muted">Origin</dt>
+                    <dd className="text-text-secondary">{order.originCountry}</dd>
+                  </div>
+                  <div>
+                    <dt className="text-text-muted">Created</dt>
+                    <dd className="text-text-secondary">{order.createdAt.toLocaleDateString()}</dd>
+                  </div>
+                </dl>
+                <div className="mt-3 border-t border-border-subtle pt-3">
                   <OrderStatusUpdater orderId={order.id} currentStatus={order.status} />
-                </TableCell>
-              </TableRow>
+                </div>
+              </div>
             ))}
-            {orders.length === 0 && (
-              <TableRow className="hover:bg-transparent">
-                <TableCell colSpan={6} className="px-5 py-16 text-center text-text-muted">
-                  No shipments match these filters.
-                </TableCell>
-              </TableRow>
-            )}
-          </TableBody>
-        </Table>
-      </div>
+          </div>
+
+          {/* Desktop table */}
+          <div className="hidden rounded-xl border border-border-subtle bg-surface shadow-[var(--shadow-card)] md:block">
+            <Table className="min-w-[720px] text-sm">
+              <TableHeader>
+                <TableRow className="border-border-subtle bg-surface-muted text-xs font-semibold uppercase tracking-wide text-text-muted hover:bg-surface-muted">
+                  <TableHead className="h-auto px-5 py-3 text-inherit">Tracking</TableHead>
+                  <TableHead className="h-auto px-5 py-3 text-inherit">Client</TableHead>
+                  <TableHead className="h-auto px-5 py-3 text-inherit">Origin</TableHead>
+                  <TableHead className="h-auto px-5 py-3 text-inherit">Status</TableHead>
+                  <TableHead className="h-auto px-5 py-3 text-inherit">Created</TableHead>
+                  <TableHead className="h-auto px-5 py-3 text-inherit">Action</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {orders.map((order) => (
+                  <TableRow
+                    key={order.id}
+                    className="border-border-subtle last:border-0 transition hover:bg-surface-muted"
+                  >
+                    <TableCell className="whitespace-normal px-5 py-3.5 font-mono text-xs font-medium text-brand-navy">
+                      <Link href={`/orders/${order.id}`} className="hover:underline">
+                        {order.trackingCode}
+                      </Link>
+                    </TableCell>
+                    <TableCell className="whitespace-normal px-5 py-3.5">
+                      <div className="flex items-center gap-2.5">
+                        <Avatar name={order.client.name} />
+                        <span className="font-medium text-text-primary">{order.client.name}</span>
+                      </div>
+                    </TableCell>
+                    <TableCell className="whitespace-normal px-5 py-3.5 text-text-secondary">
+                      {order.originCountry}
+                    </TableCell>
+                    <TableCell className="whitespace-normal px-5 py-3.5">
+                      <StatusBadge status={order.status} />
+                    </TableCell>
+                    <TableCell className="whitespace-normal px-5 py-3.5 text-text-muted">
+                      {order.createdAt.toLocaleDateString()}
+                    </TableCell>
+                    <TableCell className="whitespace-normal px-5 py-3.5">
+                      <OrderStatusUpdater orderId={order.id} currentStatus={order.status} />
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
+        </>
+      )}
     </AppShell>
   );
 }

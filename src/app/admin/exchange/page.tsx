@@ -7,6 +7,7 @@ import { ExchangeStatusBadge } from "@/components/ExchangeStatusBadge";
 import { ExchangeProcessModal } from "@/components/ExchangeProcessModal";
 import { UpdateExchangeRateControl } from "@/components/UpdateExchangeRateControl";
 import { ExchangePaymentSettingsForm } from "@/components/ExchangePaymentSettingsForm";
+import { FilterForm } from "@/components/FilterForm";
 import { Avatar } from "@/components/Avatar";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Clock, RefreshCcw, CheckCircle2 } from "lucide-react";
@@ -62,10 +63,7 @@ export default async function AdminExchangePage({
         />
       </div>
 
-      <form
-        className="mb-4 flex flex-wrap items-center gap-3 rounded-xl border border-border-subtle bg-surface p-3 shadow-[var(--shadow-xs)]"
-        method="get"
-      >
+      <FilterForm className="mb-4 flex flex-wrap items-center gap-3 rounded-xl border border-border-subtle bg-surface p-3 shadow-[var(--shadow-xs)]">
         <select
           name="status"
           defaultValue={params.status ?? ""}
@@ -83,56 +81,55 @@ export default async function AdminExchangePage({
         >
           Apply
         </button>
-      </form>
+      </FilterForm>
 
-      <div className="rounded-xl border border-border-subtle bg-surface shadow-[var(--shadow-card)]">
-        <Table className="min-w-[900px] text-sm">
-          <TableHeader>
-            <TableRow className="border-border-subtle bg-surface-muted text-xs font-semibold uppercase tracking-wide text-text-muted hover:bg-surface-muted">
-              <TableHead className="h-auto px-5 py-3 text-inherit">Reference</TableHead>
-              <TableHead className="h-auto px-5 py-3 text-inherit">Client</TableHead>
-              <TableHead className="h-auto px-5 py-3 text-inherit">Amount</TableHead>
-              <TableHead className="h-auto px-5 py-3 text-inherit">Method</TableHead>
-              <TableHead className="h-auto px-5 py-3 text-inherit">Status</TableHead>
-              <TableHead className="h-auto px-5 py-3 text-inherit">Submitted</TableHead>
-              <TableHead className="h-auto px-5 py-3 text-inherit">Action</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
+      {exchanges.length === 0 ? (
+        <div className="rounded-xl border border-border-subtle bg-surface px-5 py-16 text-center text-sm text-text-muted shadow-[var(--shadow-card)]">
+          No exchange requests match these filters.
+        </div>
+      ) : (
+        <>
+          {/* Mobile card list */}
+          <div className="space-y-3 md:hidden">
             {exchanges.map((exchange) => (
-              <TableRow
-                key={exchange.id}
-                className="border-border-subtle last:border-0 transition hover:bg-surface-muted"
-              >
-                <TableCell className="whitespace-normal px-5 py-3.5 font-mono text-xs font-medium text-brand-navy">
-                  <Link href={`/exchanges/${exchange.id}`} className="hover:underline">
-                    {exchange.referenceCode}
+              <div key={exchange.id} className="rounded-2xl border border-border-subtle bg-surface p-4 shadow-[var(--shadow-xs)]">
+                <div className="flex items-start justify-between gap-2">
+                  <Link href={`/exchanges/${exchange.id}`} className="min-w-0">
+                    <p className="truncate font-mono text-xs font-medium text-brand-navy">
+                      {exchange.referenceCode}
+                    </p>
                   </Link>
-                </TableCell>
-                <TableCell className="whitespace-normal px-5 py-3.5">
-                  <div className="flex items-center gap-2.5">
-                    <Avatar name={exchange.client.name} />
-                    <div>
-                      <div className="font-medium text-text-primary">{exchange.client.name}</div>
-                      <div className="text-xs text-text-muted">
-                        {exchange.client.clientCode ?? "—"} · {exchange.client.email}
-                      </div>
-                    </div>
-                  </div>
-                </TableCell>
-                <TableCell className="whitespace-normal px-5 py-3.5 text-text-secondary">
-                  ₵{exchange.amountGHS.toString()} → ¥{exchange.amountRMB.toString()}
-                </TableCell>
-                <TableCell className="whitespace-normal px-5 py-3.5 text-text-secondary">
-                  {exchange.paymentMethod}
-                </TableCell>
-                <TableCell className="whitespace-normal px-5 py-3.5">
                   <ExchangeStatusBadge status={exchange.status} />
-                </TableCell>
-                <TableCell className="whitespace-normal px-5 py-3.5 text-text-muted">
-                  {exchange.createdAt.toLocaleDateString()}
-                </TableCell>
-                <TableCell className="whitespace-normal px-5 py-3.5">
+                </div>
+
+                <div className="mt-2 flex items-center gap-2.5">
+                  <Avatar name={exchange.client.name} />
+                  <div className="min-w-0">
+                    <p className="truncate text-sm font-medium text-text-primary">{exchange.client.name}</p>
+                    <p className="truncate text-xs text-text-muted">
+                      {exchange.client.clientCode ?? "—"} · {exchange.client.email}
+                    </p>
+                  </div>
+                </div>
+
+                <dl className="mt-3 grid grid-cols-2 gap-2 border-t border-border-subtle pt-3 text-xs">
+                  <div>
+                    <dt className="text-text-muted">Amount</dt>
+                    <dd className="text-text-secondary">
+                      ₵{exchange.amountGHS.toString()} → ¥{exchange.amountRMB.toString()}
+                    </dd>
+                  </div>
+                  <div>
+                    <dt className="text-text-muted">Method</dt>
+                    <dd className="text-text-secondary">{exchange.paymentMethod}</dd>
+                  </div>
+                  <div className="col-span-2">
+                    <dt className="text-text-muted">Submitted</dt>
+                    <dd className="text-text-secondary">{exchange.createdAt.toLocaleDateString()}</dd>
+                  </div>
+                </dl>
+
+                <div className="mt-3 border-t border-border-subtle pt-3">
                   {exchange.status === "PENDING" || exchange.status === "PROCESSING" ? (
                     <ExchangeProcessModal
                       exchange={{
@@ -162,19 +159,97 @@ export default async function AdminExchangePage({
                       View
                     </Link>
                   )}
-                </TableCell>
-              </TableRow>
+                </div>
+              </div>
             ))}
-            {exchanges.length === 0 && (
-              <TableRow className="hover:bg-transparent">
-                <TableCell colSpan={7} className="px-5 py-16 text-center text-text-muted">
-                  No exchange requests match these filters.
-                </TableCell>
-              </TableRow>
-            )}
-          </TableBody>
-        </Table>
-      </div>
+          </div>
+
+          {/* Desktop table */}
+          <div className="hidden rounded-xl border border-border-subtle bg-surface shadow-[var(--shadow-card)] md:block">
+            <Table className="min-w-[900px] text-sm">
+              <TableHeader>
+                <TableRow className="border-border-subtle bg-surface-muted text-xs font-semibold uppercase tracking-wide text-text-muted hover:bg-surface-muted">
+                  <TableHead className="h-auto px-5 py-3 text-inherit">Reference</TableHead>
+                  <TableHead className="h-auto px-5 py-3 text-inherit">Client</TableHead>
+                  <TableHead className="h-auto px-5 py-3 text-inherit">Amount</TableHead>
+                  <TableHead className="h-auto px-5 py-3 text-inherit">Method</TableHead>
+                  <TableHead className="h-auto px-5 py-3 text-inherit">Status</TableHead>
+                  <TableHead className="h-auto px-5 py-3 text-inherit">Submitted</TableHead>
+                  <TableHead className="h-auto px-5 py-3 text-inherit">Action</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {exchanges.map((exchange) => (
+                  <TableRow
+                    key={exchange.id}
+                    className="border-border-subtle last:border-0 transition hover:bg-surface-muted"
+                  >
+                    <TableCell className="whitespace-normal px-5 py-3.5 font-mono text-xs font-medium text-brand-navy">
+                      <Link href={`/exchanges/${exchange.id}`} className="hover:underline">
+                        {exchange.referenceCode}
+                      </Link>
+                    </TableCell>
+                    <TableCell className="whitespace-normal px-5 py-3.5">
+                      <div className="flex items-center gap-2.5">
+                        <Avatar name={exchange.client.name} />
+                        <div>
+                          <div className="font-medium text-text-primary">{exchange.client.name}</div>
+                          <div className="text-xs text-text-muted">
+                            {exchange.client.clientCode ?? "—"} · {exchange.client.email}
+                          </div>
+                        </div>
+                      </div>
+                    </TableCell>
+                    <TableCell className="whitespace-normal px-5 py-3.5 text-text-secondary">
+                      ₵{exchange.amountGHS.toString()} → ¥{exchange.amountRMB.toString()}
+                    </TableCell>
+                    <TableCell className="whitespace-normal px-5 py-3.5 text-text-secondary">
+                      {exchange.paymentMethod}
+                    </TableCell>
+                    <TableCell className="whitespace-normal px-5 py-3.5">
+                      <ExchangeStatusBadge status={exchange.status} />
+                    </TableCell>
+                    <TableCell className="whitespace-normal px-5 py-3.5 text-text-muted">
+                      {exchange.createdAt.toLocaleDateString()}
+                    </TableCell>
+                    <TableCell className="whitespace-normal px-5 py-3.5">
+                      {exchange.status === "PENDING" || exchange.status === "PROCESSING" ? (
+                        <ExchangeProcessModal
+                          exchange={{
+                            id: exchange.id,
+                            referenceCode: exchange.referenceCode,
+                            status: exchange.status,
+                            amountGHS: exchange.amountGHS.toString(),
+                            amountRMB: exchange.amountRMB.toString(),
+                            paymentMethod: exchange.paymentMethod,
+                            paymentRef: exchange.paymentRef,
+                            payerMomoName: exchange.payerMomoName,
+                            payerMomoNumber: exchange.payerMomoNumber,
+                            payerBankName: exchange.payerBankName,
+                            payerBankAccountNumber: exchange.payerBankAccountNumber,
+                            payerBankAccountName: exchange.payerBankAccountName,
+                            proofUrl: exchange.proofUrl,
+                            recipientMethod: exchange.recipientMethod,
+                            recipientDetails: exchange.recipientDetails,
+                            recipientQrUrl: exchange.recipientQrUrl,
+                          }}
+                        />
+                      ) : (
+                        <Link
+                          href={`/exchanges/${exchange.id}`}
+                          className="text-xs font-medium text-brand-blue hover:underline"
+                        >
+                          View
+                        </Link>
+                      )}
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
+        </>
+      )}
     </AppShell>
   );
 }

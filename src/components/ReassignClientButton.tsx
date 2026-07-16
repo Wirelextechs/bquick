@@ -1,8 +1,9 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
+import { UserCog } from "lucide-react";
 import { Modal } from "./Modal";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -13,18 +14,41 @@ import { extractErrorMessage } from "@/lib/formError";
 export function ReassignClientButton({
   orderId,
   currentClientName,
-  clients,
+  trigger,
+  open: openProp,
+  onOpenChange,
 }: {
   orderId: string;
   currentClientName: string;
-  clients: ClientOption[];
+  /** Custom trigger element; pass `null` to render no trigger (fully externally controlled via `open`/`onOpenChange`). */
+  trigger?: React.ReactNode;
+  open?: boolean;
+  onOpenChange?: (open: boolean) => void;
 }) {
   const router = useRouter();
-  const [open, setOpen] = useState(false);
+  const [openState, setOpenState] = useState(false);
+  const open = openProp ?? openState;
+  const setOpen = onOpenChange ?? setOpenState;
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [newClientId, setNewClientId] = useState("");
   const [note, setNote] = useState("");
+  const [clients, setClients] = useState<ClientOption[] | null>(null);
+
+  // Client list is only needed once this modal is actually opened, so fetch
+  // it on demand instead of loading it on every page render.
+  useEffect(() => {
+    if (!open || clients !== null) return;
+    let cancelled = false;
+    fetch("/api/admin/clients")
+      .then((res) => res.json().catch(() => ({ clients: [] })))
+      .then((body) => {
+        if (!cancelled) setClients(body.clients ?? []);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [open, clients]);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -42,10 +66,10 @@ export function ReassignClientButton({
     setLoading(false);
     if (!res.ok) {
       const body = await res.json().catch(() => ({}));
-      setError(extractErrorMessage(body.error, "Failed to reassign order"));
+      setError(extractErrorMessage(body.error, "Failed to reassign shipment"));
       return;
     }
-    toast.success("Order reassigned to a new client");
+    toast.success("Shipment reassigned to a new client");
     setNewClientId("");
     setNote("");
     setOpen(false);
@@ -54,16 +78,17 @@ export function ReassignClientButton({
 
   return (
     <>
-      <button
-        onClick={() => setOpen(true)}
-        className="text-xs font-medium text-text-secondary underline decoration-dotted underline-offset-2 hover:text-brand-blue"
-      >
-        Reassign
-      </button>
+      {trigger !== undefined ? (
+        trigger
+      ) : (
+        <Button variant="outline" size="sm" onClick={() => setOpen(true)}>
+          <UserCog className="size-3.5" /> Reassign
+        </Button>
+      )}
 
       {open && (
         <Modal
-          title="Reassign order to a different client"
+          title="Reassign shipment to a different client"
           description={`Currently assigned to ${currentClientName}. Use this to correct a mistaken selection at intake.`}
           onClose={() => setOpen(false)}
         >
@@ -74,10 +99,13 @@ export function ReassignClientButton({
               </Label>
               <ClientCombobox
                 id="reassign-client"
-                clients={clients}
+                clients={clients ?? []}
                 value={newClientId}
                 onChange={setNewClientId}
               />
+              {clients === null && (
+                <p className="mt-1 text-xs text-text-muted">Loading clients…</p>
+              )}
             </div>
             <div>
               <Label htmlFor="reassign-note" className="mb-1.5">
@@ -102,7 +130,7 @@ export function ReassignClientButton({
                 Cancel
               </Button>
               <Button type="submit" disabled={loading}>
-                {loading ? "Reassigning..." : "Reassign order"}
+                {loading ? "Reassigning..." : "Reassign shipment"}
               </Button>
             </div>
           </form>

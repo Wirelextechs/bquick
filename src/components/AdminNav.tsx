@@ -4,7 +4,7 @@ export function AdminNav(active: "orders" | "clients" | "agents" | "exchange") {
   return [
     {
       href: "/admin",
-      label: "Orders",
+      label: "Shipments",
       icon: <Package className="h-5 w-5" />,
       active: active === "orders",
     },

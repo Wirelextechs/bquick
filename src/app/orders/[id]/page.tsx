@@ -9,8 +9,7 @@ import { ClientNav } from "@/components/ClientNav";
 import { StatusBadge } from "@/components/StatusBadge";
 import { StatusTimeline } from "@/components/StatusTimeline";
 import { OrderStatusUpdater } from "@/components/OrderStatusUpdater";
-import { ReassignClientButton } from "@/components/ReassignClientButton";
-import { AdminStatusOverride } from "@/components/AdminStatusOverride";
+import { OrderMoreActions } from "@/components/OrderMoreActions";
 import { EditOrderModal } from "@/components/EditOrderModal";
 import { PhotoGallery } from "@/components/PhotoGallery";
 import { canEditOrder } from "@/lib/orderPermissions";
@@ -36,7 +35,7 @@ function describeLog(entry: {
     return `Reassigned from ${entry.fromClientName ?? "unknown"} to ${entry.toClientName ?? "unknown"}`;
   }
   if (entry.action === "DETAILS_EDITED") {
-    return "Order details edited";
+    return "Shipment details edited";
   }
   return `Status changed ${entry.fromStatus?.replace("_", " ") ?? "?"} → ${entry.toStatus?.replace("_", " ") ?? "?"}`;
 }
@@ -93,15 +92,6 @@ export default async function OrderDetailPage({
   if (role === "CLIENT" && order.clientId !== session.user.id) redirect("/client");
 
   const canEdit = canEditOrder(session.user, order);
-
-  const clients =
-    role === "ADMIN"
-      ? await prisma.user.findMany({
-          where: { role: "CLIENT" },
-          select: { id: true, clientCode: true, name: true, email: true, phone: true },
-          orderBy: { name: "asc" },
-        })
-      : [];
 
   const backHref = role === "ADMIN" ? "/admin" : role === "AGENT" ? "/agent" : "/client";
   const navItems =
@@ -177,14 +167,11 @@ export default async function OrderDetailPage({
                 />
               )}
               {role === "ADMIN" && (
-                <>
-                  <ReassignClientButton
-                    orderId={order.id}
-                    currentClientName={order.client.name}
-                    clients={clients}
-                  />
-                  <AdminStatusOverride orderId={order.id} currentStatus={order.status} />
-                </>
+                <OrderMoreActions
+                  orderId={order.id}
+                  currentClientName={order.client.name}
+                  currentStatus={order.status}
+                />
               )}
             </div>
           )}

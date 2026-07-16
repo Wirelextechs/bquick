@@ -90,7 +90,7 @@ export function EditOrderModal({
       setError(extractErrorMessage(body.error, "Failed to save changes"));
       return;
     }
-    toast.success("Order details updated");
+    toast.success("Shipment details updated");
     setOpen(false);
     router.refresh();
   }
@@ -98,13 +98,13 @@ export function EditOrderModal({
   return (
     <>
       <Button variant="outline" size="sm" onClick={() => setOpen(true)}>
-        Edit order
+        Edit shipment
       </Button>
 
       {open && (
         <Modal
-          title="Edit order details"
-          description="Changes are recorded in the order's audit trail."
+          title="Edit shipment details"
+          description="Changes are recorded in the shipment's audit trail."
           onClose={() => setOpen(false)}
         >
           <form onSubmit={handleSubmit} className="space-y-4">

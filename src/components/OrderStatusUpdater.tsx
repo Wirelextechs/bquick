@@ -3,11 +3,13 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
+import { ArrowRight, CheckCircle2, TriangleAlert } from "lucide-react";
 import { nextStatus } from "@/lib/statusFlow";
 import { Modal } from "./Modal";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Badge } from "@/components/ui/badge";
 import { extractErrorMessage } from "@/lib/formError";
 
 export function OrderStatusUpdater({
@@ -26,7 +28,11 @@ export function OrderStatusUpdater({
   const target = nextStatus(currentStatus);
 
   if (!target) {
-    return <span className="text-xs font-medium text-emerald-600">Completed</span>;
+    return (
+      <Badge variant="outline" className="border-emerald-200 bg-emerald-50 text-emerald-600">
+        <CheckCircle2 className="size-3" /> Completed
+      </Badge>
+    );
   }
 
   const requiresEta = target === "IN_TRANSIT";
@@ -55,7 +61,7 @@ export function OrderStatusUpdater({
       setError(extractErrorMessage(body.error, "Failed to update status"));
       return;
     }
-    toast.success(`Order marked as ${target!.replace("_", " ").toLowerCase()}`);
+    toast.success(`Shipment marked as ${target!.replace("_", " ").toLowerCase()}`);
     setNote("");
     setEstimatedArrival("");
     setOpen(false);
@@ -64,22 +70,26 @@ export function OrderStatusUpdater({
 
   return (
     <>
-      <Button
-        variant="outline"
-        size="sm"
-        onClick={() => setOpen(true)}
-        className="border-brand-blue text-brand-blue hover:bg-brand-blue hover:text-white"
-      >
+      <Button size="sm" onClick={() => setOpen(true)}>
         Advance to {target.replace("_", " ")}
+        <ArrowRight className="size-3.5" />
       </Button>
 
       {open && (
         <Modal
-          title={`Mark as ${target.replace("_", " ").toLowerCase()}`}
-          description={`This will move the order from ${currentStatus.replace("_", " ").toLowerCase()} to ${target.replace("_", " ").toLowerCase()}.`}
+          title={`Mark as ${target.replace("_", " ").toLowerCase()}?`}
+          description={`Are you sure? This moves the shipment from ${currentStatus.replace("_", " ").toLowerCase()} to ${target.replace("_", " ").toLowerCase()} and can't be undone from here.`}
           onClose={() => setOpen(false)}
         >
           <form onSubmit={handleConfirm} className="space-y-4">
+            <div className="flex items-start gap-2.5 rounded-lg border border-amber-200 bg-amber-50 px-3.5 py-2.5 text-sm text-amber-700">
+              <TriangleAlert className="mt-0.5 size-4 shrink-0" />
+              <p>
+                Confirm you want to advance this shipment to{" "}
+                <span className="font-semibold">{target.replace("_", " ").toLowerCase()}</span>.
+                This is logged in the audit trail.
+              </p>
+            </div>
             {requiresEta && (
               <div>
                 <Label htmlFor="status-eta" className="mb-1.5">
@@ -117,7 +127,7 @@ export function OrderStatusUpdater({
                 Cancel
               </Button>
               <Button type="submit" disabled={loading}>
-                {loading ? "Updating..." : "Confirm"}
+                {loading ? "Updating..." : `Yes, mark as ${target.replace("_", " ").toLowerCase()}`}
               </Button>
             </div>
           </form>

@@ -5,8 +5,8 @@ import { AppShell } from "@/components/AppShell";
 import { AdminNav } from "@/components/AdminNav";
 import { StatusBadge } from "@/components/StatusBadge";
 import { OrderStatusUpdater } from "@/components/OrderStatusUpdater";
-import { ReassignClientButton } from "@/components/ReassignClientButton";
-import { OrderHistoryButton } from "@/components/OrderHistoryButton";
+import { ShipmentRowActions } from "@/components/ShipmentRowActions";
+import { FilterForm } from "@/components/FilterForm";
 import { Avatar } from "@/components/Avatar";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -34,7 +34,7 @@ export default async function AdminPage({
     where.createdAt = { gte: start, lt: end };
   }
 
-  const [orders, stats, clients] = await Promise.all([
+  const [orders, stats] = await Promise.all([
     prisma.order.findMany({
       where,
       include: {
@@ -46,11 +46,6 @@ export default async function AdminPage({
       take: 100,
     }),
     prisma.order.groupBy({ by: ["status"], _count: true }),
-    prisma.user.findMany({
-      where: { role: "CLIENT" },
-      select: { id: true, clientCode: true, name: true, email: true, phone: true },
-      orderBy: { name: "asc" },
-    }),
   ]);
 
   const statCounts = Object.fromEntries(stats.map((s) => [s.status, s._count]));
@@ -59,7 +54,7 @@ export default async function AdminPage({
   return (
     <AppShell
       navItems={AdminNav("orders")}
-      pageTitle="Orders"
+      pageTitle="Shipments"
       pageDescription="Every shipment across all clients and agents"
       userName={session!.user.name ?? ""}
       roleLabel="Administrator"
@@ -73,10 +68,7 @@ export default async function AdminPage({
         <StatCard label="Picked up" value={statCounts.PICKED_UP ?? 0} icon={<PackageCheck className="size-4" />} tone="emerald" />
       </div>
 
-      <form
-        className="mb-4 flex flex-wrap items-center gap-3 rounded-xl border border-border-subtle bg-surface p-3 shadow-[var(--shadow-xs)]"
-        method="get"
-      >
+      <FilterForm className="mb-4 flex flex-wrap items-center gap-3 rounded-xl border border-border-subtle bg-surface p-3 shadow-[var(--shadow-xs)]">
         <select
           name="status"
           defaultValue={params.status ?? ""}
@@ -98,98 +90,141 @@ export default async function AdminPage({
         />
         <Input type="date" name="date" defaultValue={params.date ?? ""} className="w-auto" />
         <Button type="submit">Apply filters</Button>
-      </form>
+      </FilterForm>
 
-      <div className="rounded-xl border border-border-subtle bg-surface shadow-[var(--shadow-card)]">
-        <Table className="min-w-[900px] text-sm">
-          <TableHeader>
-            <TableRow className="border-border-subtle bg-surface-muted text-xs font-semibold uppercase tracking-wide text-text-muted hover:bg-surface-muted">
-              <TableHead className="h-auto px-5 py-3 text-inherit">Tracking</TableHead>
-              <TableHead className="h-auto px-5 py-3 text-inherit">Client</TableHead>
-              <TableHead className="h-auto px-5 py-3 text-inherit">Status</TableHead>
-              <TableHead className="h-auto px-5 py-3 text-inherit">Created by</TableHead>
-              <TableHead className="h-auto px-5 py-3 text-inherit">Last updated by</TableHead>
-              <TableHead className="h-auto px-5 py-3 text-inherit">Created</TableHead>
-              <TableHead className="h-auto px-5 py-3 text-inherit">Action</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
+      {orders.length === 0 ? (
+        <div className="rounded-xl border border-border-subtle bg-surface px-5 py-16 text-center text-sm text-text-muted shadow-[var(--shadow-card)]">
+          No shipments match these filters.
+        </div>
+      ) : (
+        <>
+          {/* Mobile card list */}
+          <div className="space-y-3 md:hidden">
             {orders.map((order) => (
-              <TableRow
-                key={order.id}
-                className="border-border-subtle last:border-0 transition hover:bg-surface-muted"
-              >
-                <TableCell className="whitespace-normal px-5 py-3.5 font-mono text-xs font-medium text-brand-navy">
-                  <Link href={`/orders/${order.id}`} className="hover:underline">
-                    {order.trackingCode}
+              <div key={order.id} className="rounded-2xl border border-border-subtle bg-surface p-4 shadow-[var(--shadow-xs)]">
+                <div className="flex items-start justify-between gap-2">
+                  <Link href={`/orders/${order.id}`} className="min-w-0">
+                    <p className="truncate font-mono text-xs font-medium text-brand-navy">
+                      {order.trackingCode}
+                    </p>
                   </Link>
-                </TableCell>
-                <TableCell className="whitespace-normal px-5 py-3.5">
-                  <Link
-                    href={`/admin/clients/${order.client.id}`}
-                    className="flex items-center gap-2.5 hover:underline"
-                  >
-                    <Avatar name={order.client.name} />
-                    <div>
-                      <div className="font-medium text-text-primary">{order.client.name}</div>
-                      <div className="text-xs text-text-muted">
-                        {order.client.clientCode ?? "—"} · {order.client.email}
-                      </div>
-                    </div>
-                  </Link>
-                </TableCell>
-                <TableCell className="whitespace-normal px-5 py-3.5">
                   <StatusBadge status={order.status} />
-                </TableCell>
-                <TableCell className="whitespace-normal px-5 py-3.5 text-text-secondary">
-                  {order.createdBy.role === "AGENT" ? (
-                    <Link href={`/admin/agents/${order.createdBy.id}`} className="hover:underline">
-                      {order.createdBy.name}
-                    </Link>
-                  ) : (
-                    order.createdBy.name
-                  )}
-                </TableCell>
-                <TableCell className="whitespace-normal px-5 py-3.5 text-text-secondary">
-                  {!order.lastUpdatedBy ? (
-                    "—"
-                  ) : order.lastUpdatedBy.role === "AGENT" ? (
-                    <Link href={`/admin/agents/${order.lastUpdatedBy.id}`} className="hover:underline">
-                      {order.lastUpdatedBy.name}
-                    </Link>
-                  ) : (
-                    order.lastUpdatedBy.name
-                  )}
-                </TableCell>
-                <TableCell className="whitespace-normal px-5 py-3.5 text-text-muted">
-                  {order.createdAt.toLocaleDateString()}
-                </TableCell>
-                <TableCell className="whitespace-normal px-5 py-3.5">
-                  <div className="flex flex-col items-start gap-1.5">
-                    <OrderStatusUpdater orderId={order.id} currentStatus={order.status} />
-                    <div className="flex items-center gap-2">
-                      <ReassignClientButton
-                        orderId={order.id}
-                        currentClientName={order.client.name}
-                        clients={clients}
-                      />
-                      <span className="text-text-muted">·</span>
-                      <OrderHistoryButton orderId={order.id} />
-                    </div>
+                </div>
+
+                <Link
+                  href={`/admin/clients/${order.client.id}`}
+                  className="mt-2 flex items-center gap-2.5"
+                >
+                  <Avatar name={order.client.name} />
+                  <div className="min-w-0">
+                    <p className="truncate text-sm font-medium text-text-primary">{order.client.name}</p>
+                    <p className="truncate text-xs text-text-muted">
+                      {order.client.clientCode ?? "—"} · {order.client.email}
+                    </p>
                   </div>
-                </TableCell>
-              </TableRow>
+                </Link>
+
+                <dl className="mt-3 grid grid-cols-2 gap-2 border-t border-border-subtle pt-3 text-xs">
+                  <div>
+                    <dt className="text-text-muted">Created by</dt>
+                    <dd className="truncate text-text-secondary">{order.createdBy.name}</dd>
+                  </div>
+                  <div>
+                    <dt className="text-text-muted">Last updated by</dt>
+                    <dd className="truncate text-text-secondary">{order.lastUpdatedBy?.name ?? "—"}</dd>
+                  </div>
+                  <div className="col-span-2">
+                    <dt className="text-text-muted">Created</dt>
+                    <dd className="text-text-secondary">{order.createdAt.toLocaleDateString()}</dd>
+                  </div>
+                </dl>
+
+                <div className="mt-3 flex items-center gap-1.5 border-t border-border-subtle pt-3">
+                  <OrderStatusUpdater orderId={order.id} currentStatus={order.status} />
+                  <ShipmentRowActions orderId={order.id} currentClientName={order.client.name} />
+                </div>
+              </div>
             ))}
-            {orders.length === 0 && (
-              <TableRow className="hover:bg-transparent">
-                <TableCell colSpan={7} className="px-5 py-16 text-center text-text-muted">
-                  No orders match these filters.
-                </TableCell>
-              </TableRow>
-            )}
-          </TableBody>
-        </Table>
-      </div>
+          </div>
+
+          {/* Desktop table */}
+          <div className="hidden rounded-xl border border-border-subtle bg-surface shadow-[var(--shadow-card)] md:block">
+            <Table className="min-w-[900px] text-sm">
+              <TableHeader>
+                <TableRow className="border-border-subtle bg-surface-muted text-xs font-semibold uppercase tracking-wide text-text-muted hover:bg-surface-muted">
+                  <TableHead className="h-auto px-5 py-3 text-inherit">Tracking</TableHead>
+                  <TableHead className="h-auto px-5 py-3 text-inherit">Client</TableHead>
+                  <TableHead className="h-auto px-5 py-3 text-inherit">Status</TableHead>
+                  <TableHead className="h-auto px-5 py-3 text-inherit">Created by</TableHead>
+                  <TableHead className="h-auto px-5 py-3 text-inherit">Last updated by</TableHead>
+                  <TableHead className="h-auto px-5 py-3 text-inherit">Created</TableHead>
+                  <TableHead className="h-auto px-5 py-3 text-inherit">Action</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {orders.map((order) => (
+                  <TableRow
+                    key={order.id}
+                    className="border-border-subtle last:border-0 transition hover:bg-surface-muted"
+                  >
+                    <TableCell className="whitespace-normal px-5 py-3.5 font-mono text-xs font-medium text-brand-navy">
+                      <Link href={`/orders/${order.id}`} className="hover:underline">
+                        {order.trackingCode}
+                      </Link>
+                    </TableCell>
+                    <TableCell className="whitespace-normal px-5 py-3.5">
+                      <Link
+                        href={`/admin/clients/${order.client.id}`}
+                        className="flex items-center gap-2.5 hover:underline"
+                      >
+                        <Avatar name={order.client.name} />
+                        <div>
+                          <div className="font-medium text-text-primary">{order.client.name}</div>
+                          <div className="text-xs text-text-muted">
+                            {order.client.clientCode ?? "—"} · {order.client.email}
+                          </div>
+                        </div>
+                      </Link>
+                    </TableCell>
+                    <TableCell className="whitespace-normal px-5 py-3.5">
+                      <StatusBadge status={order.status} />
+                    </TableCell>
+                    <TableCell className="whitespace-normal px-5 py-3.5 text-text-secondary">
+                      {order.createdBy.role === "AGENT" ? (
+                        <Link href={`/admin/agents/${order.createdBy.id}`} className="hover:underline">
+                          {order.createdBy.name}
+                        </Link>
+                      ) : (
+                        order.createdBy.name
+                      )}
+                    </TableCell>
+                    <TableCell className="whitespace-normal px-5 py-3.5 text-text-secondary">
+                      {!order.lastUpdatedBy ? (
+                        "—"
+                      ) : order.lastUpdatedBy.role === "AGENT" ? (
+                        <Link href={`/admin/agents/${order.lastUpdatedBy.id}`} className="hover:underline">
+                          {order.lastUpdatedBy.name}
+                        </Link>
+                      ) : (
+                        order.lastUpdatedBy.name
+                      )}
+                    </TableCell>
+                    <TableCell className="whitespace-normal px-5 py-3.5 text-text-muted">
+                      {order.createdAt.toLocaleDateString()}
+                    </TableCell>
+                    <TableCell className="whitespace-normal px-5 py-3.5">
+                      <div className="flex items-center gap-1.5">
+                        <OrderStatusUpdater orderId={order.id} currentStatus={order.status} />
+                        <ShipmentRowActions orderId={order.id} currentClientName={order.client.name} />
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
+        </>
+      )}
     </AppShell>
   );
 }

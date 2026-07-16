@@ -1,7 +1,9 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { History } from "lucide-react";
 import { Modal } from "./Modal";
+import { Button } from "@/components/ui/button";
 
 type LogEntry = {
   id: string;
@@ -20,36 +22,54 @@ function describe(entry: LogEntry) {
     return `Reassigned from ${entry.fromClientName ?? "unknown"} to ${entry.toClientName ?? "unknown"}`;
   }
   if (entry.action === "DETAILS_EDITED") {
-    return "Order details edited";
+    return "Shipment details edited";
   }
   return `Status changed ${entry.fromStatus?.replace("_", " ") ?? "?"} → ${entry.toStatus?.replace("_", " ") ?? "?"}`;
 }
 
-export function OrderHistoryButton({ orderId }: { orderId: string }) {
-  const [open, setOpen] = useState(false);
-  const [loading, setLoading] = useState(false);
+export function OrderHistoryButton({
+  orderId,
+  trigger,
+  open: openProp,
+  onOpenChange,
+}: {
+  orderId: string;
+  /** Custom trigger element; pass `null` to render no trigger (fully externally controlled via `open`/`onOpenChange`). */
+  trigger?: React.ReactNode;
+  open?: boolean;
+  onOpenChange?: (open: boolean) => void;
+}) {
+  const [openState, setOpenState] = useState(false);
+  const open = openProp ?? openState;
+  const setOpen = onOpenChange ?? setOpenState;
   const [logs, setLogs] = useState<LogEntry[] | null>(null);
+  const loading = open && logs === null;
 
-  async function handleOpen() {
-    setOpen(true);
-    setLoading(true);
-    const res = await fetch(`/api/admin/orders/${orderId}/logs`);
-    const body = await res.json().catch(() => ({ logs: [] }));
-    setLogs(body.logs ?? []);
-    setLoading(false);
-  }
+  useEffect(() => {
+    if (!open || logs !== null) return;
+    let cancelled = false;
+    fetch(`/api/admin/orders/${orderId}/logs`)
+      .then((res) => res.json().catch(() => ({ logs: [] })))
+      .then((body) => {
+        if (!cancelled) setLogs(body.logs ?? []);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [open, orderId, logs]);
 
   return (
     <>
-      <button
-        onClick={handleOpen}
-        className="text-xs font-medium text-text-secondary underline decoration-dotted underline-offset-2 hover:text-brand-blue"
-      >
-        History
-      </button>
+      {trigger !== undefined ? (
+        trigger
+      ) : (
+        <Button variant="outline" size="sm" onClick={() => setOpen(true)}>
+          <History className="size-3.5" /> History
+        </Button>
+      )}
 
       {open && (
-        <Modal title="Order history" description="Full audit trail for this order" onClose={() => setOpen(false)}>
+        <Modal title="Shipment history" description="Full audit trail for this shipment" onClose={() => setOpen(false)}>
           {loading && <p className="text-sm text-text-muted">Loading…</p>}
           {!loading && logs && logs.length === 0 && (
             <p className="text-sm text-text-muted">No changes recorded yet.</p>

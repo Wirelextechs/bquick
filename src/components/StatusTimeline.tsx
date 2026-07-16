@@ -1,7 +1,7 @@
 import { STATUS_ORDER } from "@/lib/statusFlow";
 
 const STEP_LABELS: Record<string, string> = {
-  PENDING: "Order placed",
+  PENDING: "Shipment placed",
   IN_TRANSIT: "In transit",
   AT_PORT: "At Ghana port",
   AT_WAREHOUSE: "At warehouse",

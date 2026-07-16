@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
+import { ShieldAlert } from "lucide-react";
 import { Modal } from "./Modal";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -20,12 +21,21 @@ import { STATUS_ORDER } from "@/lib/statusFlow";
 export function AdminStatusOverride({
   orderId,
   currentStatus,
+  trigger,
+  open: openProp,
+  onOpenChange,
 }: {
   orderId: string;
   currentStatus: string;
+  /** Custom trigger element; pass `null` to render no trigger (fully externally controlled via `open`/`onOpenChange`). */
+  trigger?: React.ReactNode;
+  open?: boolean;
+  onOpenChange?: (open: boolean) => void;
 }) {
   const router = useRouter();
-  const [open, setOpen] = useState(false);
+  const [openState, setOpenState] = useState(false);
+  const open = openProp ?? openState;
+  const setOpen = onOpenChange ?? setOpenState;
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [newStatus, setNewStatus] = useState(currentStatus);
@@ -54,12 +64,13 @@ export function AdminStatusOverride({
 
   return (
     <>
-      <button
-        onClick={() => setOpen(true)}
-        className="text-xs font-medium text-text-secondary underline decoration-dotted underline-offset-2 hover:text-brand-blue"
-      >
-        Correct status
-      </button>
+      {trigger !== undefined ? (
+        trigger
+      ) : (
+        <Button variant="outline" size="sm" onClick={() => setOpen(true)}>
+          <ShieldAlert className="size-3.5" /> Correct status
+        </Button>
+      )}
 
       {open && (
         <Modal
@@ -68,6 +79,13 @@ export function AdminStatusOverride({
           onClose={() => setOpen(false)}
         >
           <form onSubmit={handleSubmit} className="space-y-4">
+            <div className="flex items-start gap-2.5 rounded-lg border border-red-100 bg-red-50 px-3.5 py-2.5 text-sm text-brand-red">
+              <ShieldAlert className="mt-0.5 size-4 shrink-0" />
+              <p>
+                Are you sure? This bypasses the normal status flow and is logged as a manual
+                override.
+              </p>
+            </div>
             <div>
               <Label htmlFor="override-status" className="mb-1.5">
                 Correct status
