@@ -62,16 +62,16 @@ export default async function AgentDetailPage({
         <section className="relative overflow-hidden rounded-2xl border border-border-subtle bg-surface shadow-[var(--shadow-card)] lg:col-span-1">
           <div className="h-16" style={{ background: "var(--gradient-ocean)" }} />
           <div className="px-5 pb-5">
-            <div className="-mt-8 mb-4 flex items-end gap-3">
-              <div className="rounded-full bg-surface p-1 shadow-[var(--shadow-card)]">
+            <div className="-mt-8 mb-3">
+              <div className="inline-flex rounded-full bg-surface p-1 shadow-[var(--shadow-card)]">
                 <Avatar name={agent.name} size={56} />
               </div>
-              <div className="pb-1">
-                <p className="font-semibold text-text-primary">{agent.name}</p>
-                <p className="text-xs text-text-muted">
-                  {agent.agentLocation === "GHANA" ? "Ghana" : "Abroad"}
-                </p>
-              </div>
+            </div>
+            <div className="mb-4">
+              <p className="font-semibold text-text-primary">{agent.name}</p>
+              <p className="text-xs text-text-muted">
+                {agent.agentLocation === "GHANA" ? "Ghana" : "Abroad"}
+              </p>
             </div>
             <dl className="space-y-2 text-sm">
               <div>
