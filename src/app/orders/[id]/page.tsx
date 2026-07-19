@@ -2,10 +2,7 @@ import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
-import { AppShell } from "@/components/AppShell";
-import { AdminNav } from "@/components/AdminNav";
-import { AgentNav } from "@/components/AgentNav";
-import { ClientNav } from "@/components/ClientNav";
+import { PageHeader } from "@/components/PageHeader";
 import { StatusBadge } from "@/components/StatusBadge";
 import { StatusTimeline } from "@/components/StatusTimeline";
 import { OrderStatusUpdater } from "@/components/OrderStatusUpdater";
@@ -94,12 +91,6 @@ export default async function OrderDetailPage({
   const canEdit = canEditOrder(session.user, order);
 
   const backHref = role === "ADMIN" ? "/admin" : role === "AGENT" ? "/agent" : "/client";
-  const navItems =
-    role === "ADMIN"
-      ? AdminNav("orders")
-      : role === "AGENT"
-        ? AgentNav("shipments")
-        : ClientNav("shipments");
 
   const stageTimestamps = [
     { label: "Estimated arrival", value: order.estimatedArrival },
@@ -110,13 +101,8 @@ export default async function OrderDetailPage({
   ].filter((t) => t.value);
 
   return (
-    <AppShell
-      navItems={navItems}
-      pageTitle={order.trackingCode}
-      pageDescription={`Shipment from ${order.originCountry}`}
-      userName={session.user.name ?? ""}
-      roleLabel={role === "ADMIN" ? "Administrator" : role === "AGENT" ? "Agent" : "Client"}
-    >
+    <>
+      <PageHeader title={order.trackingCode} description={`Shipment from ${order.originCountry}`} />
       <Link
         href={backHref}
         className="mb-4 inline-flex items-center gap-1 text-sm text-text-secondary hover:text-brand-blue"
@@ -336,6 +322,6 @@ export default async function OrderDetailPage({
           )}
         </div>
       </div>
-    </AppShell>
+    </>
   );
 }

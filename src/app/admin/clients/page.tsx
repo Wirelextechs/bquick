@@ -1,15 +1,11 @@
 import Link from "next/link";
-import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
-import { AppShell } from "@/components/AppShell";
-import { AdminNav } from "@/components/AdminNav";
+import { PageHeader } from "@/components/PageHeader";
 import { CreateClientForm } from "@/components/CreateClientForm";
 import { Avatar } from "@/components/Avatar";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 
 export default async function AdminClientsPage() {
-  const session = await auth();
-
   const clients = await prisma.user.findMany({
     where: { role: "CLIENT" },
     include: { _count: { select: { ordersAsClient: true } } },
@@ -17,14 +13,12 @@ export default async function AdminClientsPage() {
   });
 
   return (
-    <AppShell
-      navItems={AdminNav("clients")}
-      pageTitle="Clients"
-      pageDescription={`${clients.length} client${clients.length === 1 ? "" : "s"} on the platform`}
-      userName={session!.user.name ?? ""}
-      roleLabel="Administrator"
-      actions={<CreateClientForm />}
-    >
+    <>
+      <PageHeader
+        title="Clients"
+        description={`${clients.length} client${clients.length === 1 ? "" : "s"} on the platform`}
+        actions={<CreateClientForm />}
+      />
       {clients.length === 0 ? (
         <div className="rounded-xl border border-border-subtle bg-surface px-5 py-16 text-center text-sm text-text-muted shadow-[var(--shadow-card)]">
           No clients yet. Create one to get started.
@@ -120,6 +114,6 @@ export default async function AdminClientsPage() {
           </div>
         </>
       )}
-    </AppShell>
+    </>
   );
 }

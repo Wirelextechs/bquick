@@ -1,9 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
-import { AppShell } from "@/components/AppShell";
-import { AdminNav } from "@/components/AdminNav";
+import { PageHeader } from "@/components/PageHeader";
 import { StatusBadge } from "@/components/StatusBadge";
 import { SuspendAgentButton } from "@/components/SuspendAgentButton";
 import { EditAgentModal } from "@/components/EditAgentModal";
@@ -21,7 +19,6 @@ export default async function AgentDetailPage({
   params: Promise<{ id: string }>;
   searchParams: Promise<{ trackingCode?: string; date?: string }>;
 }) {
-  const session = await auth();
   const { id } = await params;
   const filters = await searchParams;
 
@@ -52,13 +49,11 @@ export default async function AgentDetailPage({
   });
 
   return (
-    <AppShell
-      navItems={AdminNav("agents")}
-      pageTitle={agent.name}
-      pageDescription={agent.agentLocation === "GHANA" ? "Home team (Ghana)" : "Origin team (abroad)"}
-      userName={session!.user.name ?? ""}
-      roleLabel="Administrator"
-    >
+    <>
+      <PageHeader
+        title={agent.name}
+        description={agent.agentLocation === "GHANA" ? "Home team (Ghana)" : "Origin team (abroad)"}
+      />
       <Link href="/admin/agents" className="mb-4 inline-flex items-center gap-1 text-sm text-text-secondary hover:text-brand-blue">
         ← Back to agents
       </Link>
@@ -217,6 +212,6 @@ export default async function AgentDetailPage({
           )}
         </div>
       </div>
-    </AppShell>
+    </>
   );
 }

@@ -12,8 +12,9 @@ const RETRY_DELAYS_MS = [300, 800];
 function isConnectionError(err: unknown): boolean {
   if (err instanceof Prisma.PrismaClientInitializationError) return true;
   if (err instanceof Prisma.PrismaClientKnownRequestError) {
-    // P1001 can't reach server, P1002 timed out, P1008 op timed out, P1017 closed
-    return ["P1001", "P1002", "P1008", "P1017"].includes(err.code);
+    // P1001 can't reach server, P1002 timed out, P1008 op timed out, P1017
+    // closed, P2024 timed out waiting for a free connection in the pool
+    return ["P1001", "P1002", "P1008", "P1017", "P2024"].includes(err.code);
   }
   return false;
 }

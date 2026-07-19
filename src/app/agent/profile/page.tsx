@@ -1,7 +1,6 @@
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
-import { AppShell } from "@/components/AppShell";
-import { AgentNav } from "@/components/AgentNav";
+import { PageHeader } from "@/components/PageHeader";
 import { Avatar } from "@/components/Avatar";
 import { Lock } from "lucide-react";
 
@@ -10,12 +9,8 @@ export default async function AgentProfilePage() {
   const agent = await prisma.user.findUniqueOrThrow({ where: { id: session!.user.id } });
 
   return (
-    <AppShell
-      navItems={AgentNav("profile")}
-      pageTitle="My Profile"
-      userName={session!.user.name ?? ""}
-      roleLabel="Agent"
-    >
+    <>
+      <PageHeader title="My Profile" />
       <div className="mx-auto max-w-xl space-y-6">
         <div className="flex items-center gap-2 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-700">
           <Lock className="size-4 shrink-0" />
@@ -55,6 +50,6 @@ export default async function AgentProfilePage() {
           </dl>
         </div>
       </div>
-    </AppShell>
+    </>
   );
 }

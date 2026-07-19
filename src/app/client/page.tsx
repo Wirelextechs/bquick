@@ -1,11 +1,10 @@
 import Link from "next/link";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
-import { AppShell } from "@/components/AppShell";
+import { PageHeader } from "@/components/PageHeader";
 import { StatusBadge } from "@/components/StatusBadge";
 import { StatusTimeline } from "@/components/StatusTimeline";
 import { ShipmentPhotoStrip } from "@/components/ShipmentPhotoStrip";
-import { ClientNav } from "@/components/ClientNav";
 import { Package } from "lucide-react";
 
 export default async function ClientPage() {
@@ -18,13 +17,8 @@ export default async function ClientPage() {
   });
 
   return (
-    <AppShell
-      navItems={ClientNav("shipments")}
-      pageTitle="My Shipments"
-      pageDescription="Track your goods from origin to your door"
-      userName={session!.user.name ?? ""}
-      roleLabel="Client"
-    >
+    <>
+      <PageHeader title="My Shipments" description="Track your goods from origin to your door" />
       {orders.length === 0 ? (
         <div className="flex flex-col items-center justify-center rounded-2xl border border-dashed border-border-strong bg-surface py-24 text-center">
           <div
@@ -90,6 +84,6 @@ export default async function ClientPage() {
           ))}
         </div>
       )}
-    </AppShell>
+    </>
   );
 }

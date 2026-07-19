@@ -1,9 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
-import { AppShell } from "@/components/AppShell";
-import { AdminNav } from "@/components/AdminNav";
+import { PageHeader } from "@/components/PageHeader";
 import { StatusBadge } from "@/components/StatusBadge";
 import { Avatar } from "@/components/Avatar";
 import { FilterForm } from "@/components/FilterForm";
@@ -19,7 +17,6 @@ export default async function ClientDetailPage({
   params: Promise<{ id: string }>;
   searchParams: Promise<{ status?: string; trackingCode?: string; date?: string }>;
 }) {
-  const session = await auth();
   const { id } = await params;
   const filters = await searchParams;
 
@@ -45,13 +42,8 @@ export default async function ClientDetailPage({
   });
 
   return (
-    <AppShell
-      navItems={AdminNav("clients")}
-      pageTitle={client.name}
-      pageDescription={client.clientCode ?? undefined}
-      userName={session!.user.name ?? ""}
-      roleLabel="Administrator"
-    >
+    <>
+      <PageHeader title={client.name} description={client.clientCode ?? undefined} />
       <Link href="/admin/clients" className="mb-4 inline-flex items-center gap-1 text-sm text-text-secondary hover:text-brand-blue">
         ← Back to clients
       </Link>
@@ -194,6 +186,6 @@ export default async function ClientDetailPage({
           )}
         </div>
       </div>
-    </AppShell>
+    </>
   );
 }

@@ -1,7 +1,6 @@
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
-import { AppShell } from "@/components/AppShell";
-import { ClientNav } from "@/components/ClientNav";
+import { PageHeader } from "@/components/PageHeader";
 import { ClientProfileForm } from "@/components/ClientProfileForm";
 import { Lock, IdCard } from "lucide-react";
 
@@ -10,13 +9,8 @@ export default async function ClientProfilePage() {
   const client = await prisma.user.findUniqueOrThrow({ where: { id: session!.user.id } });
 
   return (
-    <AppShell
-      navItems={ClientNav("profile")}
-      pageTitle="My Profile"
-      pageDescription="Your contact details on file with BQUICK Logistics"
-      userName={session!.user.name ?? ""}
-      roleLabel="Client"
-    >
+    <>
+      <PageHeader title="My Profile" description="Your contact details on file with BQUICK Logistics" />
       <div className="mx-auto max-w-xl space-y-6">
         <div
           className="relative overflow-hidden rounded-2xl p-5 text-white shadow-[var(--shadow-glow-blue)]"
@@ -58,6 +52,6 @@ export default async function ClientProfilePage() {
           />
         </div>
       </div>
-    </AppShell>
+    </>
   );
 }

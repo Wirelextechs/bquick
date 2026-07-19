@@ -2,35 +2,42 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { Menu } from "lucide-react";
 import { Logo } from "./Logo";
 import { SignOutButton } from "./SignOutButton";
+import { usePageHeaderContext } from "./PageHeaderContext";
 
 type NavItem = {
   href: string;
   label: string;
   icon: React.ReactNode;
-  active: boolean;
 };
+
+// Root-level nav items ("/admin", "/agent", "/client") should only be
+// active on an exact match — otherwise every nested route under them
+// (e.g. "/admin/clients") would also light up "Shipments".
+function isNavItemActive(pathname: string, href: string) {
+  if (pathname === href) return true;
+  const rootHrefs = ["/admin", "/agent", "/client"];
+  if (rootHrefs.includes(href)) return false;
+  return pathname.startsWith(href + "/");
+}
 
 export function AppShell({
   navItems,
-  pageTitle,
-  pageDescription,
   userName,
   roleLabel,
-  actions,
   children,
 }: {
   navItems: NavItem[];
-  pageTitle: string;
-  pageDescription?: string;
   userName: string;
   roleLabel: string;
-  actions?: React.ReactNode;
   children: React.ReactNode;
 }) {
   const [mobileOpen, setMobileOpen] = useState(false);
+  const pathname = usePathname();
+  const { header } = usePageHeaderContext();
 
   const initials = userName
     .split(" ")
@@ -66,22 +73,25 @@ export function AppShell({
         </div>
 
         <nav className="relative flex-1 space-y-1 px-3 py-5">
-          {navItems.map((item) => (
-            <Link
-              key={item.href}
-              href={item.href}
-              onClick={() => setMobileOpen(false)}
-              className={`relative flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition ${
-                item.active
-                  ? "text-white shadow-[var(--shadow-glow-blue)]"
-                  : "text-white/60 hover:bg-white/5 hover:text-white"
-              }`}
-              style={item.active ? { background: "var(--gradient-action)" } : undefined}
-            >
-              {item.icon}
-              {item.label}
-            </Link>
-          ))}
+          {navItems.map((item) => {
+            const active = isNavItemActive(pathname, item.href);
+            return (
+              <Link
+                key={item.href}
+                href={item.href}
+                onClick={() => setMobileOpen(false)}
+                className={`relative flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition ${
+                  active
+                    ? "text-white shadow-[var(--shadow-glow-blue)]"
+                    : "text-white/60 hover:bg-white/5 hover:text-white"
+                }`}
+                style={active ? { background: "var(--gradient-action)" } : undefined}
+              >
+                {item.icon}
+                {item.label}
+              </Link>
+            );
+          })}
         </nav>
 
         <div className="relative border-t border-white/10 px-4 py-4">
@@ -113,17 +123,19 @@ export function AppShell({
             </button>
             <div className="min-w-0">
               <h1 className="truncate text-lg font-semibold tracking-tight text-text-primary">
-                {pageTitle}
+                {header?.title ?? ""}
               </h1>
-              {pageDescription && (
+              {header?.description && (
                 <p className="hidden truncate text-sm text-text-muted sm:block">
-                  {pageDescription}
+                  {header.description}
                 </p>
               )}
             </div>
           </div>
-          {actions && (
-            <div className="flex w-full shrink-0 flex-wrap items-center gap-3 sm:w-auto">{actions}</div>
+          {header?.actions && (
+            <div className="flex w-full shrink-0 flex-wrap items-center gap-3 sm:w-auto">
+              {header.actions}
+            </div>
           )}
         </header>
 

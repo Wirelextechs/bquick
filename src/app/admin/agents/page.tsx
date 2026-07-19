@@ -1,16 +1,12 @@
 import Link from "next/link";
-import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
-import { AppShell } from "@/components/AppShell";
-import { AdminNav } from "@/components/AdminNav";
+import { PageHeader } from "@/components/PageHeader";
 import { CreateAgentForm } from "@/components/CreateAgentForm";
 import { SuspendAgentButton } from "@/components/SuspendAgentButton";
 import { Avatar } from "@/components/Avatar";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 
 export default async function AdminAgentsPage() {
-  const session = await auth();
-
   const agents = await prisma.user.findMany({
     where: { role: "AGENT" },
     include: { _count: { select: { ordersCreated: true } } },
@@ -18,14 +14,12 @@ export default async function AdminAgentsPage() {
   });
 
   return (
-    <AppShell
-      navItems={AdminNav("agents")}
-      pageTitle="Agents"
-      pageDescription={`${agents.length} agent${agents.length === 1 ? "" : "s"} across origin and home teams`}
-      userName={session!.user.name ?? ""}
-      roleLabel="Administrator"
-      actions={<CreateAgentForm />}
-    >
+    <>
+      <PageHeader
+        title="Agents"
+        description={`${agents.length} agent${agents.length === 1 ? "" : "s"} across origin and home teams`}
+        actions={<CreateAgentForm />}
+      />
       {agents.length === 0 ? (
         <div className="rounded-xl border border-border-subtle bg-surface px-5 py-16 text-center text-sm text-text-muted shadow-[var(--shadow-card)]">
           No agents yet. Create one to get started.
@@ -129,6 +123,6 @@ export default async function AdminAgentsPage() {
           </div>
         </>
       )}
-    </AppShell>
+    </>
   );
 }

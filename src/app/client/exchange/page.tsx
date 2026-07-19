@@ -1,8 +1,7 @@
 import Link from "next/link";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
-import { AppShell } from "@/components/AppShell";
-import { ClientNav } from "@/components/ClientNav";
+import { PageHeader } from "@/components/PageHeader";
 import { ExchangeStatusBadge } from "@/components/ExchangeStatusBadge";
 import { ExchangeRateCalculator } from "@/components/ExchangeRateCalculator";
 import { ExchangeRequestForm } from "@/components/ExchangeRequestForm";
@@ -23,13 +22,11 @@ export default async function ClientExchangePage() {
   const rate = latestRate?.rate.toString() ?? "0";
 
   return (
-    <AppShell
-      navItems={ClientNav("exchange")}
-      pageTitle="RMB Exchange"
-      pageDescription="Convert Ghana Cedis to Chinese Yuan for supplier payments"
-      userName={session!.user.name ?? ""}
-      roleLabel="Client"
-    >
+    <>
+      <PageHeader
+        title="RMB Exchange"
+        description="Convert Ghana Cedis to Chinese Yuan for supplier payments"
+      />
       <div className="mb-6 grid gap-5 lg:grid-cols-2">
         <ExchangeRateCalculator rate={rate} />
 
@@ -100,6 +97,6 @@ export default async function ClientExchangePage() {
           ))}
         </div>
       )}
-    </AppShell>
+    </>
   );
 }

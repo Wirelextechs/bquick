@@ -1,12 +1,10 @@
 import Link from "next/link";
-import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
-import { AppShell } from "@/components/AppShell";
+import { PageHeader } from "@/components/PageHeader";
 import { StatusBadge } from "@/components/StatusBadge";
 import { OrderStatusUpdater } from "@/components/OrderStatusUpdater";
 import { CreateOrderForm } from "@/components/CreateOrderForm";
 import { Avatar } from "@/components/Avatar";
-import { AgentNav } from "@/components/AgentNav";
 import { FilterForm } from "@/components/FilterForm";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -18,7 +16,6 @@ export default async function AgentPage({
 }: {
   searchParams: Promise<{ status?: string; trackingCode?: string; date?: string }>;
 }) {
-  const session = await auth();
   const params = await searchParams;
 
   const where: Prisma.OrderWhereInput = {};
@@ -51,14 +48,12 @@ export default async function AgentPage({
   ]);
 
   return (
-    <AppShell
-      navItems={AgentNav("shipments")}
-      pageTitle="Shipments"
-      pageDescription="Every shipment in the pipeline, home and abroad"
-      userName={session!.user.name ?? ""}
-      roleLabel="Agent"
-      actions={<CreateOrderForm clients={clients} />}
-    >
+    <>
+      <PageHeader
+        title="Shipments"
+        description="Every shipment in the pipeline, home and abroad"
+        actions={<CreateOrderForm clients={clients} />}
+      />
       {clients.length === 0 && (
         <div className="mb-4 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-700">
           No client accounts exist yet. Ask an admin to create one before you can register a shipment.
@@ -177,6 +172,6 @@ export default async function AgentPage({
           </div>
         </>
       )}
-    </AppShell>
+    </>
   );
 }

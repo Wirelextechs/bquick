@@ -2,9 +2,7 @@ import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
-import { AppShell } from "@/components/AppShell";
-import { AdminNav } from "@/components/AdminNav";
-import { ClientNav } from "@/components/ClientNav";
+import { PageHeader } from "@/components/PageHeader";
 import { ExchangeStatusBadge } from "@/components/ExchangeStatusBadge";
 import { ExchangeStatusTimeline } from "@/components/ExchangeStatusTimeline";
 import { ExchangeProcessModal } from "@/components/ExchangeProcessModal";
@@ -51,16 +49,10 @@ export default async function ExchangeDetailPage({
   const displayName = isGuest ? exchange.guestName! : exchange.client!.name;
 
   const backHref = role === "ADMIN" ? "/admin/exchange" : "/client/exchange";
-  const navItems = role === "ADMIN" ? AdminNav("exchange") : ClientNav("exchange");
 
   return (
-    <AppShell
-      navItems={navItems}
-      pageTitle={exchange.referenceCode}
-      pageDescription="RMB Exchange request"
-      userName={session.user.name ?? ""}
-      roleLabel={role === "ADMIN" ? "Administrator" : "Client"}
-    >
+    <>
+      <PageHeader title={exchange.referenceCode} description="RMB Exchange request" />
       <Link
         href={backHref}
         className="mb-4 inline-flex items-center gap-1 text-sm text-text-secondary hover:text-brand-blue"
@@ -313,6 +305,6 @@ export default async function ExchangeDetailPage({
           )}
         </div>
       </div>
-    </AppShell>
+    </>
   );
 }

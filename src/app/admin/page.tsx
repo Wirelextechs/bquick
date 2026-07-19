@@ -1,8 +1,6 @@
 import Link from "next/link";
-import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
-import { AppShell } from "@/components/AppShell";
-import { AdminNav } from "@/components/AdminNav";
+import { PageHeader } from "@/components/PageHeader";
 import { StatusBadge } from "@/components/StatusBadge";
 import { OrderStatusUpdater } from "@/components/OrderStatusUpdater";
 import { ShipmentRowActions } from "@/components/ShipmentRowActions";
@@ -19,7 +17,6 @@ export default async function AdminPage({
 }: {
   searchParams: Promise<{ status?: string; trackingCode?: string; date?: string }>;
 }) {
-  const session = await auth();
   const params = await searchParams;
 
   const where: Prisma.OrderWhereInput = {};
@@ -52,13 +49,8 @@ export default async function AdminPage({
   const totalOrders = stats.reduce((sum, s) => sum + s._count, 0);
 
   return (
-    <AppShell
-      navItems={AdminNav("orders")}
-      pageTitle="Shipments"
-      pageDescription="Every shipment across all clients and agents"
-      userName={session!.user.name ?? ""}
-      roleLabel="Administrator"
-    >
+    <>
+      <PageHeader title="Shipments" description="Every shipment across all clients and agents" />
       <div className="mb-6 grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-6">
         <StatCard label="Total shipments" value={totalOrders} hero />
         <StatCard label="Pending" value={statCounts.PENDING ?? 0} icon={<Clock className="size-4" />} tone="slate" />
@@ -225,7 +217,7 @@ export default async function AdminPage({
           </div>
         </>
       )}
-    </AppShell>
+    </>
   );
 }
 

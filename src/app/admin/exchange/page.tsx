@@ -1,8 +1,6 @@
 import Link from "next/link";
-import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
-import { AppShell } from "@/components/AppShell";
-import { AdminNav } from "@/components/AdminNav";
+import { PageHeader } from "@/components/PageHeader";
 import { ExchangeStatusBadge } from "@/components/ExchangeStatusBadge";
 import { Badge } from "@/components/ui/badge";
 import { ExchangeProcessModal } from "@/components/ExchangeProcessModal";
@@ -23,7 +21,6 @@ export default async function AdminExchangePage({
 }: {
   searchParams: Promise<{ status?: string }>;
 }) {
-  const session = await auth();
   const params = await searchParams;
 
   const where: Prisma.ExchangeTransactionWhereInput = {};
@@ -46,14 +43,12 @@ export default async function AdminExchangePage({
   const rate = latestRate?.rate.toString() ?? "0";
 
   return (
-    <AppShell
-      navItems={AdminNav("exchange")}
-      pageTitle="RMB Exchange"
-      pageDescription="Review and process client exchange requests"
-      userName={session!.user.name ?? ""}
-      roleLabel="Administrator"
-      actions={<UpdateExchangeRateControl currentRate={rate} />}
-    >
+    <>
+      <PageHeader
+        title="RMB Exchange"
+        description="Review and process client exchange requests"
+        actions={<UpdateExchangeRateControl currentRate={rate} />}
+      />
       <div className="mb-6 grid grid-cols-2 gap-4 sm:grid-cols-4">
         <StatCard label="Total requests" value={totalExchanges} hero />
         <StatCard label="Pending" value={statCounts.PENDING ?? 0} icon={<Clock className="size-4" />} tone="slate" />
@@ -275,7 +270,7 @@ export default async function AdminExchangePage({
           </div>
         </>
       )}
-    </AppShell>
+    </>
   );
 }
 
