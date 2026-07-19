@@ -1,9 +1,9 @@
 "use client";
 
-import { useState } from "react";
-import { useRouter } from "next/navigation";
+import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { Modal } from "./Modal";
+import { useRefreshTransition } from "@/lib/useRefreshTransition";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
@@ -29,11 +29,20 @@ type Exchange = {
 };
 
 export function ExchangeProcessModal({ exchange }: { exchange: Exchange }) {
-  const router = useRouter();
+  const { isPending, refresh } = useRefreshTransition();
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState<string | null>(null);
+  const [confirmed, setConfirmed] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [note, setNote] = useState("");
+
+  useEffect(() => {
+    if (confirmed && !isPending) {
+      setConfirmed(false);
+      setOpen(false);
+      setNote("");
+    }
+  }, [confirmed, isPending]);
 
   async function runAction(action: "process" | "complete" | "fail") {
     if (action === "fail" && !note.trim()) {
@@ -60,9 +69,8 @@ export function ExchangeProcessModal({ exchange }: { exchange: Exchange }) {
           ? "Marked as completed"
           : "Marked as failed"
     );
-    setNote("");
-    setOpen(false);
-    router.refresh();
+    setConfirmed(true);
+    refresh();
   }
 
   return (
@@ -172,20 +180,20 @@ export function ExchangeProcessModal({ exchange }: { exchange: Exchange }) {
               <Button
                 type="button"
                 variant="outline"
-                disabled={loading !== null}
+                disabled={loading !== null || confirmed}
                 className="border-brand-red text-brand-red hover:bg-red-50"
                 onClick={() => runAction("fail")}
               >
                 {loading === "fail" ? "Failing..." : "Fail"}
               </Button>
               {exchange.status === "PENDING" && (
-                <Button type="button" disabled={loading !== null} onClick={() => runAction("process")}>
-                  {loading === "process" ? "Saving..." : "Verify payment → Processing"}
+                <Button type="button" disabled={loading !== null || confirmed} onClick={() => runAction("process")}>
+                  {loading === "process" || confirmed ? "Saving..." : "Verify payment → Processing"}
                 </Button>
               )}
               {exchange.status === "PROCESSING" && (
-                <Button type="button" disabled={loading !== null} onClick={() => runAction("complete")}>
-                  {loading === "complete" ? "Saving..." : "RMB sent → Completed"}
+                <Button type="button" disabled={loading !== null || confirmed} onClick={() => runAction("complete")}>
+                  {loading === "complete" || confirmed ? "Saving..." : "RMB sent → Completed"}
                 </Button>
               )}
             </div>

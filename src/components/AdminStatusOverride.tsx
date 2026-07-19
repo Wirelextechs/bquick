@@ -1,9 +1,9 @@
 "use client";
 
-import { useState } from "react";
-import { useRouter } from "next/navigation";
+import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { ShieldAlert } from "lucide-react";
+import { useRefreshTransition } from "@/lib/useRefreshTransition";
 import { Modal } from "./Modal";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -32,14 +32,23 @@ export function AdminStatusOverride({
   open?: boolean;
   onOpenChange?: (open: boolean) => void;
 }) {
-  const router = useRouter();
+  const { isPending, refresh } = useRefreshTransition();
   const [openState, setOpenState] = useState(false);
   const open = openProp ?? openState;
   const setOpen = onOpenChange ?? setOpenState;
   const [loading, setLoading] = useState(false);
+  const [confirmed, setConfirmed] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [newStatus, setNewStatus] = useState(currentStatus);
   const [note, setNote] = useState("");
+
+  useEffect(() => {
+    if (confirmed && !isPending) {
+      setConfirmed(false);
+      setOpen(false);
+      setNote("");
+    }
+  }, [confirmed, isPending, setOpen]);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -57,9 +66,8 @@ export function AdminStatusOverride({
       return;
     }
     toast.success("Status manually corrected");
-    setNote("");
-    setOpen(false);
-    router.refresh();
+    setConfirmed(true);
+    refresh();
   }
 
   return (
@@ -128,10 +136,10 @@ export function AdminStatusOverride({
               </Button>
               <Button
                 type="submit"
-                disabled={loading}
+                disabled={loading || confirmed}
                 className="bg-brand-red text-white hover:opacity-90"
               >
-                {loading ? "Saving..." : "Apply correction"}
+                {loading || confirmed ? "Saving..." : "Apply correction"}
               </Button>
             </div>
           </form>

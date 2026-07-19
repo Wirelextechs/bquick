@@ -1,10 +1,10 @@
 "use client";
 
-import { useState } from "react";
-import { useRouter } from "next/navigation";
+import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { ArrowRight, CheckCircle2, TriangleAlert } from "lucide-react";
 import { nextStatus } from "@/lib/statusFlow";
+import { useRefreshTransition } from "@/lib/useRefreshTransition";
 import { Modal } from "./Modal";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -19,13 +19,26 @@ export function OrderStatusUpdater({
   orderId: string;
   currentStatus: string;
 }) {
-  const router = useRouter();
+  const { isPending, refresh } = useRefreshTransition();
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [confirmed, setConfirmed] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [note, setNote] = useState("");
   const [estimatedArrival, setEstimatedArrival] = useState("");
   const target = nextStatus(currentStatus);
+
+  // Keep the modal open (button busy) through the page-data refresh that
+  // follows a successful update, instead of closing instantly and leaving
+  // the table showing stale data for a beat with no feedback.
+  useEffect(() => {
+    if (confirmed && !isPending) {
+      setConfirmed(false);
+      setOpen(false);
+      setNote("");
+      setEstimatedArrival("");
+    }
+  }, [confirmed, isPending]);
 
   if (!target) {
     return (
@@ -62,10 +75,8 @@ export function OrderStatusUpdater({
       return;
     }
     toast.success(`Shipment marked as ${target!.replace("_", " ").toLowerCase()}`);
-    setNote("");
-    setEstimatedArrival("");
-    setOpen(false);
-    router.refresh();
+    setConfirmed(true);
+    refresh();
   }
 
   return (
@@ -126,8 +137,10 @@ export function OrderStatusUpdater({
               <Button type="button" variant="outline" onClick={() => setOpen(false)}>
                 Cancel
               </Button>
-              <Button type="submit" disabled={loading}>
-                {loading ? "Updating..." : `Yes, mark as ${target.replace("_", " ").toLowerCase()}`}
+              <Button type="submit" disabled={loading || confirmed}>
+                {loading || confirmed
+                  ? "Updating..."
+                  : `Yes, mark as ${target.replace("_", " ").toLowerCase()}`}
               </Button>
             </div>
           </form>
