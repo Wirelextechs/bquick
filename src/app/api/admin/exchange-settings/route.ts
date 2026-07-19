@@ -6,6 +6,8 @@ import { prisma } from "@/lib/prisma";
 const bodySchema = z.object({
   momoNumber: z.string().min(1),
   momoName: z.string().min(1),
+  whatsappNumber: z.string().optional(),
+  callNumber: z.string().optional(),
 });
 
 export async function PUT(req: NextRequest) {
@@ -20,19 +22,18 @@ export async function PUT(req: NextRequest) {
     return NextResponse.json({ error: parsed.error.flatten() }, { status: 400 });
   }
 
+  const data = {
+    momoNumber: parsed.data.momoNumber,
+    momoName: parsed.data.momoName,
+    whatsappNumber: parsed.data.whatsappNumber || null,
+    callNumber: parsed.data.callNumber || null,
+    updatedById: session.user.id,
+  };
+
   const settings = await prisma.exchangePaymentSettings.upsert({
     where: { id: "singleton" },
-    update: {
-      momoNumber: parsed.data.momoNumber,
-      momoName: parsed.data.momoName,
-      updatedById: session.user.id,
-    },
-    create: {
-      id: "singleton",
-      momoNumber: parsed.data.momoNumber,
-      momoName: parsed.data.momoName,
-      updatedById: session.user.id,
-    },
+    update: data,
+    create: { id: "singleton", ...data },
   });
 
   return NextResponse.json({ settings });

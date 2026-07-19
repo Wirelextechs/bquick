@@ -4,6 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { AppShell } from "@/components/AppShell";
 import { AdminNav } from "@/components/AdminNav";
 import { ExchangeStatusBadge } from "@/components/ExchangeStatusBadge";
+import { Badge } from "@/components/ui/badge";
 import { ExchangeProcessModal } from "@/components/ExchangeProcessModal";
 import { UpdateExchangeRateControl } from "@/components/UpdateExchangeRateControl";
 import { ExchangePaymentSettingsForm } from "@/components/ExchangePaymentSettingsForm";
@@ -12,6 +13,10 @@ import { Avatar } from "@/components/Avatar";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Clock, RefreshCcw, CheckCircle2 } from "lucide-react";
 import { Prisma, ExchangeStatus } from "@prisma/client";
+
+function displayName(exchange: { requesterRole: string; guestName: string | null; client: { name: string } | null }) {
+  return exchange.requesterRole === "GUEST" ? (exchange.guestName ?? "Guest") : (exchange.client?.name ?? "—");
+}
 
 export default async function AdminExchangePage({
   searchParams,
@@ -27,7 +32,7 @@ export default async function AdminExchangePage({
   const [exchanges, stats, latestRate, settings] = await Promise.all([
     prisma.exchangeTransaction.findMany({
       where,
-      include: { client: { select: { id: true, name: true, clientCode: true, email: true } } },
+      include: { client: { select: { id: true, name: true, clientCode: true, email: true } } }, // client is optional now — null for guest (requesterRole = GUEST) rows
       orderBy: { createdAt: "desc" },
       take: 100,
     }),
@@ -60,6 +65,8 @@ export default async function AdminExchangePage({
         <ExchangePaymentSettingsForm
           momoNumber={settings?.momoNumber ?? ""}
           momoName={settings?.momoName ?? ""}
+          whatsappNumber={settings?.whatsappNumber ?? ""}
+          callNumber={settings?.callNumber ?? ""}
         />
       </div>
 
@@ -103,11 +110,20 @@ export default async function AdminExchangePage({
                 </div>
 
                 <div className="mt-2 flex items-center gap-2.5">
-                  <Avatar name={exchange.client.name} />
+                  <Avatar name={displayName(exchange)} />
                   <div className="min-w-0">
-                    <p className="truncate text-sm font-medium text-text-primary">{exchange.client.name}</p>
+                    <div className="flex items-center gap-1.5">
+                      <p className="truncate text-sm font-medium text-text-primary">{displayName(exchange)}</p>
+                      {exchange.requesterRole === "GUEST" && (
+                        <Badge variant="outline" className="shrink-0 border-amber-200 bg-amber-50 text-amber-700">
+                          Guest
+                        </Badge>
+                      )}
+                    </div>
                     <p className="truncate text-xs text-text-muted">
-                      {exchange.client.clientCode ?? "—"} · {exchange.client.email}
+                      {exchange.requesterRole === "GUEST"
+                        ? exchange.contactPhone
+                        : `${exchange.client?.clientCode ?? "—"} · ${exchange.client?.email ?? ""}`}
                     </p>
                   </div>
                 </div>
@@ -191,11 +207,20 @@ export default async function AdminExchangePage({
                     </TableCell>
                     <TableCell className="whitespace-normal px-5 py-3.5">
                       <div className="flex items-center gap-2.5">
-                        <Avatar name={exchange.client.name} />
+                        <Avatar name={displayName(exchange)} />
                         <div>
-                          <div className="font-medium text-text-primary">{exchange.client.name}</div>
+                          <div className="flex items-center gap-1.5">
+                            <span className="font-medium text-text-primary">{displayName(exchange)}</span>
+                            {exchange.requesterRole === "GUEST" && (
+                              <Badge variant="outline" className="border-amber-200 bg-amber-50 text-amber-700">
+                                Guest
+                              </Badge>
+                            )}
+                          </div>
                           <div className="text-xs text-text-muted">
-                            {exchange.client.clientCode ?? "—"} · {exchange.client.email}
+                            {exchange.requesterRole === "GUEST"
+                              ? exchange.contactPhone
+                              : `${exchange.client?.clientCode ?? "—"} · ${exchange.client?.email ?? ""}`}
                           </div>
                         </div>
                       </div>

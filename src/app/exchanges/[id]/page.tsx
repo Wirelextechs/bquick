@@ -47,6 +47,9 @@ export default async function ExchangeDetailPage({
   const role = session.user.role;
   if (role === "CLIENT" && exchange.clientId !== session.user.id) redirect("/client/exchange");
 
+  const isGuest = exchange.requesterRole === "GUEST";
+  const displayName = isGuest ? exchange.guestName! : exchange.client!.name;
+
   const backHref = role === "ADMIN" ? "/admin/exchange" : "/client/exchange";
   const navItems = role === "ADMIN" ? AdminNav("exchange") : ClientNav("exchange");
 
@@ -259,27 +262,34 @@ export default async function ExchangeDetailPage({
 
         <div className="space-y-6">
           <section className="rounded-2xl border border-border-subtle bg-surface p-5 shadow-[var(--shadow-card)]">
-            <SectionHeading icon={<User className="size-3.5" />}>Client</SectionHeading>
+            <SectionHeading icon={<User className="size-3.5" />}>{isGuest ? "Guest" : "Client"}</SectionHeading>
             <dl className="space-y-2 text-sm">
               <div>
                 <dt className="text-text-muted">Name</dt>
-                <dd className="font-medium text-text-primary">{exchange.client.name}</dd>
+                <dd className="font-medium text-text-primary">{displayName}</dd>
               </div>
-              {role !== "CLIENT" && (
-                <>
-                  <div>
-                    <dt className="text-text-muted">Client ID</dt>
-                    <dd className="font-mono text-text-primary">{exchange.client.clientCode ?? "—"}</dd>
-                  </div>
-                  <div>
-                    <dt className="text-text-muted">Email</dt>
-                    <dd className="text-text-primary">{exchange.client.email}</dd>
-                  </div>
-                  <div>
-                    <dt className="text-text-muted">Phone</dt>
-                    <dd className="text-text-primary">{exchange.client.phone ?? "—"}</dd>
-                  </div>
-                </>
+              {isGuest ? (
+                <div>
+                  <dt className="text-text-muted">Type</dt>
+                  <dd className="text-text-primary">Guest request (no account) · contact via phone above</dd>
+                </div>
+              ) : (
+                role !== "CLIENT" && (
+                  <>
+                    <div>
+                      <dt className="text-text-muted">Client ID</dt>
+                      <dd className="font-mono text-text-primary">{exchange.client!.clientCode ?? "—"}</dd>
+                    </div>
+                    <div>
+                      <dt className="text-text-muted">Email</dt>
+                      <dd className="text-text-primary">{exchange.client!.email}</dd>
+                    </div>
+                    <div>
+                      <dt className="text-text-muted">Phone</dt>
+                      <dd className="text-text-primary">{exchange.client!.phone ?? "—"}</dd>
+                    </div>
+                  </>
+                )
               )}
             </dl>
           </section>

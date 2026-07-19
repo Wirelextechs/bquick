@@ -17,6 +17,7 @@ enum Role {
   ADMIN
   AGENT
   CLIENT
+  GUEST // tags a publicly-submitted exchange request (ExchangeTransaction.requesterRole); never assigned to an actual User row
 }
 
 // Where an agent is based; drives which actions their UI exposes
@@ -215,8 +216,10 @@ model ExchangeTransaction {
   id            String @id @default(uuid())
   referenceCode String @unique // e.g. EX-2026-XXXXXX, client-facing tracking code
 
-  clientId String
-  client   User   @relation("ClientExchanges", fields: [clientId], references: [id])
+  requesterRole Role   @default(CLIENT) // CLIENT = submitted by a logged-in client (clientId required); GUEST = public submission, no account (guestName required)
+  clientId      String?
+  client        User?   @relation("ClientExchanges", fields: [clientId], references: [id])
+  guestName     String? // set only when requesterRole = GUEST
 
   amountGHS Decimal // client-entered
   rate      Decimal // RMB per 1 GHS, snapshotted from ExchangeRate at submission
@@ -251,6 +254,8 @@ model ExchangeTransaction {
   @@index([clientId])
   @@index([status])
   @@index([referenceCode])
+  @@index([contactPhone])
+  @@index([payerMomoNumber])
 }
 
 enum ExchangeLogAction {
@@ -291,10 +296,12 @@ model ExchangeRate {
 // Merchant MoMo collection details shown to clients when submitting a
 // request. Singleton row (fixed id "singleton"), admin-editable.
 model ExchangePaymentSettings {
-  id          String   @id @default(uuid())
-  momoNumber  String
-  momoName    String
-  updatedById String
-  updatedBy   User     @relation("ExchangeSettingsUpdater", fields: [updatedById], references: [id])
-  updatedAt   DateTime @updatedAt
+  id             String   @id @default(uuid())
+  momoNumber     String
+  momoName       String
+  whatsappNumber String? // shown as a WhatsApp CTA (wa.me link) on the public landing page
+  callNumber     String? // shown as a "Call us" CTA (tel: link) on the public landing page
+  updatedById    String
+  updatedBy      User     @relation("ExchangeSettingsUpdater", fields: [updatedById], references: [id])
+  updatedAt      DateTime @updatedAt
 }
