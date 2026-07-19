@@ -17,7 +17,13 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
         const password = credentials?.password as string | undefined;
         if (!email || !password) return null;
 
-        const user = await prisma.user.findUnique({ where: { email } });
+        let user;
+        try {
+          user = await prisma.user.findUnique({ where: { email } });
+        } catch (err) {
+          console.error("[auth] DB lookup failed during authorize():", err);
+          throw err;
+        }
         if (!user || !user.isActive) return null;
 
         const isValid = await bcrypt.compare(password, user.passwordHash);
